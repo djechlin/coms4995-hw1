@@ -21,7 +21,9 @@ class NeuralNetwork(object):
         :param drop_prob: drop probability for dropout layers. Only required in part 2 of the assignment
         :param reg_lambda: regularization parameter. Only required in part 2 of the assignment
         """
-        np.random.seed(1)
+        seed = 1
+        np.random.seed(seed)
+        print("Using seed %s" % seed)
         
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
