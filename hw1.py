@@ -14,7 +14,8 @@ class NeuralNetwork(object):
     Stores parameters, activations, cached values. 
     Provides necessary functions for training and prediction. 
     """
-    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0):
+    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,
+            weights=None, biases=None):
         """
         Initializes the weights and biases for each layer
         :param layer_dimensions: (list) number of nodes in each layer
@@ -31,9 +32,18 @@ class NeuralNetwork(object):
         self.reg_lambda = reg_lambda
         
         # init parameters
-        self.parameters['weights'] = [ np.random.rand(layer_dimensions[n-1], layer_dimensions[n])
-            for n, e in enumerate(layer_dimensions[1:])]
-        self.parameters['biases'] = [np.random.rand(n,1) for n in layer_dimensions[1:]]
+
+        if weights != None:
+            self.parameters[weights] = weights
+        else:
+            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
+                for idx, val in enumerate(layer_dimensions[1:])]
+
+        if biases != None:
+            self.parameters['biases'] = biases
+        else:
+            self.parameters['biases'] = [np.random.rand(n, 1)
+                for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
         """
@@ -84,16 +94,10 @@ class NeuralNetwork(object):
         cache = np.zeros(3)
 
         layerout = self.parameters['weights'][0].dot(X) + self.parameters['biases'][0]
-        for l in range(1, self.num_layers - 1):
-            layerout, cache = self.affineForward(layerout,self.parameters['weights'][l],self.parameters['biases'][l])
+        for l in range(self.num_layers - 1):
+            layerout, cache = self.affineForward(layerout,
+                self.parameters['weights'][l], self.parameters['biases'][l])
         
-        # softmax
-        # todo - removed it because of exp overflow
-        AL = np.empty_like(layerout)
-        temp = layerout
-        for i,e in enumerate(temp):
-            AL[i] = e/np.sum(temp)
-
         return AL, cache
 
     def costFunction(self, AL, y):
