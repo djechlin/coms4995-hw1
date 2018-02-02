@@ -172,7 +172,7 @@ class NeuralNetwork(object):
         """
         pass
 
-    def train(self, X, y, iters=800, alpha=0.0001, batch_size=90, print_every=100):
+    def train(self, X, y, iters=1000, alpha=0.0001, batch_size=100, print_every=100):
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -227,7 +227,7 @@ print('Data loading done')
 
 layer_dimensions = [X_train.shape[0], 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions)
-NN.train(X_train, y_train, iters=900, alpha=0.1, batch_size=20, print_every=50)
+NN.train(X_train, y_train, iters=1000, alpha=0.1, batch_size=10, print_every=50)
 
 y_predicted = NN.predict(X_test)
 save_predictions('ans1-uni', y_predicted)
