@@ -31,9 +31,8 @@ class NeuralNetwork(object):
         self.reg_lambda = reg_lambda
         
         # init parameters
-        self.parameters['weights'] = []
-        for n,e in enumerate(layer_dimensions[1:]):
-            self.parameters['weights'].append(np.random.rand(layer_dimensions[n], layer_dimensions[n-1]))
+        self.parameters['weights'] = [ np.random.rand(layer_dimensions[n-1], layer_dimensions[n])
+            for n, e in enumerate(layer_dimensions[1:])]
         self.parameters['biases'] = [np.random.rand(n,1) for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
@@ -84,13 +83,14 @@ class NeuralNetwork(object):
         """
         cache = np.zeros(3)
 
-        layerout = self.parameters['weights'][0]*X #+ self.parameters['biases'][0]
-        for l in range(1,self.numlayers - 1):
+        layerout = self.parameters['weights'][0].dot(X) + self.parameters['biases'][0]
+        for l in range(1, self.num_layers - 1):
             layerout, cache = self.affineForward(layerout,self.parameters['weights'][l],self.parameters['biases'][l])
         
-        #softmax
+        # softmax
+        # todo - removed it because of exp overflow
         AL = np.empty_like(layerout)
-        temp = np.exp(layerout)
+        temp = layerout
         for i,e in enumerate(temp):
             AL[i] = e/np.sum(temp)
 
