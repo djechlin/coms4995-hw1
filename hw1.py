@@ -21,12 +21,15 @@ class NeuralNetwork(object):
         np.random.seed(1)
         
         self.parameters = {}
-        self.num_layers =
-        self.drop_prob = 
-        self.reg_lambda =
+        self.num_layers = len(layer_dimensions)
+        self.drop_prob = drop_prob
+        self.reg_lambda = reg_lambda
         
         # init parameters
-        
+        self.parameters['weights'] = []
+        for n,e in enumerate(layer_dimensions[1:]):
+            self.parameters['weights'].append(np.random.rand(layer_dimensions[n], layer_dimensions[n-1]))
+        self.parameters['biases'] = [np.random.rand(n,1) for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
         """
@@ -35,7 +38,8 @@ class NeuralNetwork(object):
         the number of samples
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
-        
+        #or maybe join b into W
+        return W*A + b, cache        
 
     def activationForward(self, A, activation="relu"):
         """
@@ -44,10 +48,11 @@ class NeuralNetwork(object):
         :param prob: activation funciton to apply to A. Just "relu" for this assignment.
         :returns: activation(A)
         """ 
-
+        relu_v = np.vectorize(relu)
+        return relu_v(A)
 
     def relu(self, X):
-
+        return np.maximum(0,X)
             
     def dropout(self, A, prob):
         """
@@ -72,9 +77,20 @@ class NeuralNetwork(object):
             cache is cached values for each layer that
                      are needed in further steps
         """
+        cache = np.zeros(3)
+
+        layerout = self.parameters['weights'][0]*X #+ self.parameters['biases'][0]
+        for l in range(1,self.numlayers - 1):
+            layerout, cache = self.affineForward(layerout,self.parameters['weights'][l],self.parameters['biases'][l])
+        
+        #softmax
+        AL = np.empty_like(layerout)
+        temp = np.exp(layerout)
+        for i,e in enumerate(temp):
+            AL[i] = e/np.sum(temp)
 
         return AL, cache
-    
+
     def costFunction(self, AL, y):
         """
         :param AL: Activation of last layer, shape (num_classes, S)
@@ -86,10 +102,11 @@ class NeuralNetwork(object):
         
         if self.reg_lambda > 0:
             # add regularization
+            pass
        
         
         # gradient of cost
-        dAL =
+        dAL = 0
         return cost, dAL
 
     def affineBackward(self, dA_prev, cache):
@@ -109,6 +126,7 @@ class NeuralNetwork(object):
         Interface to call backward on activation functions.
         In this case, it's just relu. 
         """
+        pass
 
         
     def relu_derivative(self, dx, cached_x):
@@ -129,15 +147,17 @@ class NeuralNetwork(object):
         """
         gradients = {}
         
-        for ...:
+        for i in range(10):
             
             
             if self.drop_prob > 0:
                 #call dropout_backward
-           
+                pass
+        
             
         if self.reg_lambda > 0:
             # add gradients from L2 regularization to each dW
+            pass
         
         return gradients
 
@@ -147,8 +167,9 @@ class NeuralNetwork(object):
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent 
         """
+        pass
 
-    def train(self, X, y, iters=1000, alpha=0.0001, batch_size=100, print_every=100):
+    def train(self, X, y, iters=800, alpha=0.0001, batch_size=90, print_every=100):
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -171,13 +192,15 @@ class NeuralNetwork(object):
 
             if i % print_every == 0:
                 # print cost, train and validation set accuracies
+                pass
                 
     def predict(self, X):
         """
         Make predictions for each sample
         """
 
-        return y_pred
+        return self.forwardPropagation(X)
+
 
     def get_batch(self, X, y, batch_size):
         """
@@ -288,7 +311,7 @@ def get_train_data(data_root_path):
     y = get_labels(train_data_path, label2id)
     return X, y
 
-def save_predictions(filename, y):py
+def save_predictions(filename, y):
     """
     Dumps y into .npy file
     """
@@ -296,18 +319,18 @@ def save_predictions(filename, y):py
 
 
 # Load the data
-data_root_path = '/path/to/extracted/data/cifar10-hw1/'
+data_root_path = '/home/daniel/hw1/cifar10-hw1/'
 X_train, y_train = get_train_data(data_root_path) # this may take a few minutes
 X_test = get_images(data_root_path + 'test')
 print('Data loading done')
 
 # Part 1
 
-layer_dimensions = [X_train.shape[0], ..., 10]  # including the input and output layers
+layer_dimensions = [X_train.shape[0], 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions)
-NN.train(X_train, y_train, iters=, alpha=, batch_size=, print_every=)
+NN.train(X_train, y_train, iters=900, alpha=0.1, batch_size=20, print_every=50)
 
-# y_predicted = NN.predict(X_test)
+y_predicted = NN.predict(X_test)
 save_predictions('ans1-uni', y_predicted)
 
 # test if your numpy file has been saved correctly
