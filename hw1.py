@@ -219,8 +219,8 @@ class NeuralNetwork(object):
 
 # Load the data
 data_root_path = '/home/daniel/hw1/cifar10-hw1/'
-X_train, y_train = get_train_data(data_root_path) # this may take a few minutes
-X_test = get_images(data_root_path + 'test')
+X_train, y_train = get_train_data(data_root_path, limit=10) # this may take a few minutes
+X_test = get_images(data_root_path + 'test', limit=10)
 print('Data loading done')
 
 # Part 1
