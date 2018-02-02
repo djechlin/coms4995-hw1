@@ -15,7 +15,7 @@ class NeuralNetwork(object):
     Provides necessary functions for training and prediction. 
     """
     def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,
-            weights=None, biases=None):
+            weights=None, biases=None, activation=None):
         """
         Initializes the weights and biases for each layer
         :param layer_dimensions: (list) number of nodes in each layer
@@ -30,16 +30,16 @@ class NeuralNetwork(object):
         self.num_layers = len(layer_dimensions)
         self.drop_prob = drop_prob
         self.reg_lambda = reg_lambda
-        
+        self.activation = activation
         # init parameters
 
-        if weights != None:
-            self.parameters[weights] = weights
+        if weights is not None:
+            self.parameters['weights'] = weights
         else:
             self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
                 for idx, val in enumerate(layer_dimensions[1:])]
 
-        if biases != None:
+        if biases is not None:
             self.parameters['biases'] = biases
         else:
             self.parameters['biases'] = [np.random.rand(n, 1)
@@ -53,7 +53,7 @@ class NeuralNetwork(object):
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
         #or maybe join b into W
-        return W*A + b, cache        
+        return W*A + b, np.zeros(3)
 
     def activationForward(self, A, activation="relu"):
         """
@@ -62,6 +62,9 @@ class NeuralNetwork(object):
         :param prob: activation funciton to apply to A. Just "relu" for this assignment.
         :returns: activation(A)
         """ 
+        if self.activation is not None:
+            return self.activation(A)
+
         relu_v = np.vectorize(relu)
         return relu_v(A)
 
@@ -98,7 +101,7 @@ class NeuralNetwork(object):
             layerout, cache = self.affineForward(layerout,
                 self.parameters['weights'][l], self.parameters['biases'][l])
         
-        return AL, cache
+        return layerout, cache
 
     def costFunction(self, AL, y):
         """
@@ -223,3 +226,7 @@ class NeuralNetwork(object):
         return X_batch, y_batch
 
 
+# test forward prop
+weights = np.matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=np.matrix([[0],[0],[0]]))
+print(net.forwardPropagation([0, 1, 2]))
