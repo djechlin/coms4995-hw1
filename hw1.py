@@ -35,8 +35,10 @@ class NeuralNetwork(object):
         if weights is not None:
             self.parameters['weights'] = weights
         else:
-            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
+            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx], val).T
                 for idx, val in enumerate(layer_dimensions[1:])]
+
+        print("weights[0] shape: %s" % str(self.parameters['weights'][0].shape))
 
         if biases is not None:
             self.parameters['biases'] = biases
@@ -53,7 +55,8 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        return W * A + b, np.zeros(3)
+        print("Shapes: %s, %s" % (str(A.shape), str(W.shape)))
+        return W * A  , np.zeros(3) # + b, np.zeros(3)
 
     def activationForward(self, A, activation="relu"):
         """
@@ -96,7 +99,7 @@ class NeuralNetwork(object):
         """
         cache = np.zeros(3)
 
-        layerout = np.asmatrix(X).T
+        layerout = np.asmatrix(X)
         for l in range(self.num_layers - 1):
             layerout, cache = self.affineForward(layerout,
                 self.parameters['weights'][l], self.parameters['biases'][l])
@@ -229,21 +232,19 @@ class NeuralNetwork(object):
 # test forward prop
 
 def test_forward_prop_affine_one_output():
-    print("test_forward_prop_affine_one_output")
     weights = np.matrix("1, 2, 3")
     biases = [np.zeros((1,1))]
     net = NeuralNetwork([3, 1], weights=weights, activation=np.identity(3), biases=biases)
-    res, cache = net.forwardPropagation([0,1,2])
+    res, cache = net.forwardPropagation(np.matrix("0;1;2"))
     assert np.array_equal(res, np.matrix("8"))
 
 test_forward_prop_affine_one_output()
 
 def test_forward_prop_affine_three_output():
-    print("test_forward_prop_affine_three_output")
     weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
     biases = [np.zeros((3,1))]
     net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=biases)
-    res, cache = net.forwardPropagation([1, 2, 3])
+    res, cache = net.forwardPropagation(np.matrix("1;2;3"))
     assert np.array_equal(res, np.matrix("14; 32; 50"))
 
 test_forward_prop_affine_three_output()
