@@ -10,9 +10,14 @@ print('Data loading done')
 
 # Part 1
 
+print ("X train shape: %s" % str(X_train.shape[0]))
 layer_dimensions = [X_train.shape[0], 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions)
-NN.train(X_train, y_train, iters=1000, alpha=0.1, batch_size=10, print_every=50)
+NN.train(X_train, y_train,
+	iters=1000,
+	alpha=0.1,
+	batch_size=10,
+	print_every=50)
 
 y_predicted = NN.predict(X_test)
 save_predictions('ans1-uni', y_predicted)

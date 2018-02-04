@@ -11,8 +11,8 @@ from helpers import *
 class NeuralNetwork(object):
     """
     Abstraction of neural network.
-    Stores parameters, activations, cached values. 
-    Provides necessary functions for training and prediction. 
+    Stores parameters, activations, cached values.
+    Provides necessary functions for training and prediction.
     """
     def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,
             weights=None, biases=None, activation=None):
@@ -24,8 +24,7 @@ class NeuralNetwork(object):
         """
         seed = 1
         np.random.seed(seed)
-        print("Using seed %s" % seed)
-        
+
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
         self.drop_prob = drop_prob
@@ -36,8 +35,10 @@ class NeuralNetwork(object):
         if weights is not None:
             self.parameters['weights'] = weights
         else:
-            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
+            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx], val).T
                 for idx, val in enumerate(layer_dimensions[1:])]
+
+        print("weights[0] shape: %s" % str(self.parameters['weights'][0].shape))
 
         if biases is not None:
             self.parameters['biases'] = biases
@@ -53,7 +54,9 @@ class NeuralNetwork(object):
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
         #or maybe join b into W
-        return W*A + b, np.zeros(3)
+
+        print("Shapes: %s, %s" % (str(A.shape), str(W.shape)))
+        return W * A  , np.zeros(3) # + b, np.zeros(3)
 
     def activationForward(self, A, activation="relu"):
         """
@@ -61,7 +64,7 @@ class NeuralNetwork(object):
         :param A: input to the activation function
         :param prob: activation funciton to apply to A. Just "relu" for this assignment.
         :returns: activation(A)
-        """ 
+        """
         if self.activation is not None:
             return self.activation(A)
 
@@ -70,12 +73,12 @@ class NeuralNetwork(object):
 
     def relu(self, X):
         return np.maximum(0,X)
-            
+
     def dropout(self, A, prob):
         """
-        :param A: 
+        :param A:
         :param prob: drop prob
-        :returns: tuple (A, M) 
+        :returns: tuple (A, M)
             WHERE
             A is matrix after applying dropout
             M is dropout mask, used in the backward pass
@@ -89,18 +92,18 @@ class NeuralNetwork(object):
         for all layers. Returns the output computed at the last layer along
         with the cache required for backpropagation.
         :returns: (tuple) AL, cache
-            WHERE 
+            WHERE
             AL is activation of last layer
             cache is cached values for each layer that
                      are needed in further steps
         """
         cache = np.zeros(3)
 
-        layerout = self.parameters['weights'][0].dot(X) + self.parameters['biases'][0]
+        layerout = np.asmatrix(X)
         for l in range(self.num_layers - 1):
             layerout, cache = self.affineForward(layerout,
                 self.parameters['weights'][l], self.parameters['biases'][l])
-        
+
         return layerout, cache
 
     def costFunction(self, AL, y):
@@ -111,12 +114,12 @@ class NeuralNetwork(object):
         :returns cost, dAL: A scalar denoting cost and the gradient of cost
         """
         # compute loss
-        
+
         if self.reg_lambda > 0:
             # add regularization
             pass
-       
-        
+
+
         # gradient of cost
         dAL = 0
         return cost, dAL
@@ -136,11 +139,11 @@ class NeuralNetwork(object):
     def activationBackward(self, dA, cache, activation="relu"):
         """
         Interface to call backward on activation functions.
-        In this case, it's just relu. 
+        In this case, it's just relu.
         """
         pass
 
-        
+
     def relu_derivative(self, dx, cached_x):
 
         return dx
@@ -158,26 +161,26 @@ class NeuralNetwork(object):
         :returns gradients: dW and db for each weight/bias
         """
         gradients = {}
-        
+
         for i in range(10):
-            
-            
+
+
             if self.drop_prob > 0:
                 #call dropout_backward
                 pass
-        
-            
+
+
         if self.reg_lambda > 0:
             # add gradients from L2 regularization to each dW
             pass
-        
+
         return gradients
 
 
     def updateParameters(self, gradients, alpha):
         """
         :param gradients: gradients for each weight/bias
-        :param alpha: step size for gradient descent 
+        :param alpha: step size for gradient descent
         """
         pass
 
@@ -190,10 +193,10 @@ class NeuralNetwork(object):
         :param batch_size: number of samples in a minibatch
         :param print_every: no. of iterations to print debug info after
         """
-        
+
         for i in range(0, iters):
             # get minibatch
-            
+
             # forward prop
 
             # compute loss
@@ -205,7 +208,7 @@ class NeuralNetwork(object):
             if i % print_every == 0:
                 # print cost, train and validation set accuracies
                 pass
-                
+
     def predict(self, X):
         """
         Make predictions for each sample
@@ -217,7 +220,7 @@ class NeuralNetwork(object):
     def get_batch(self, X, y, batch_size):
         """
         Return minibatch of samples and labels
-        
+
         :param X, y: samples and corresponding labels
         :parma batch_size: minibatch size
         :returns: (tuple) X_batch, y_batch
@@ -227,6 +230,24 @@ class NeuralNetwork(object):
 
 
 # test forward prop
-weights = np.matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=np.matrix([[0],[0],[0]]))
-print(net.forwardPropagation([0, 1, 2]))
+
+def test_forward_prop_affine_one_output():
+    weights = np.matrix("1, 2, 3")
+    biases = [np.zeros((1,1))]
+    net = NeuralNetwork([3, 1], weights=weights, activation=np.identity(3), biases=biases)
+    res, cache = net.forwardPropagation(np.matrix("0;1;2"))
+    assert np.array_equal(res, np.matrix("8"))
+
+test_forward_prop_affine_one_output()
+
+def test_forward_prop_affine_three_output():
+    weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
+    biases = [np.zeros((3,1))]
+    net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=biases)
+    res, cache = net.forwardPropagation(np.matrix("1;2;3"))
+    assert np.array_equal(res, np.matrix("14; 32; 50"))
+
+test_forward_prop_affine_three_output()
+
+def test_forward_prop_activation_three_output():
+    pass
