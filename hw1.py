@@ -68,7 +68,7 @@ class NeuralNetwork(object):
         if self.activation is not None:
             return self.activation(A)
 
-        relu_v = np.vectorize(relu)
+        relu_v = np.vectorize(self.relu)
         return relu_v(A)
 
     def relu(self, X):
@@ -103,6 +103,7 @@ class NeuralNetwork(object):
         for l in range(self.num_layers - 1):
             layerout, cache = self.affineForward(layerout,
                 self.parameters['weights'][l], self.parameters['biases'][l])
+        layerout = self.activationForward(layerout)
 
         return layerout, cache
 
@@ -234,7 +235,7 @@ class NeuralNetwork(object):
 def test_forward_prop_affine_one_output():
     weights = np.matrix("1, 2, 3")
     biases = [np.zeros((1,1))]
-    net = NeuralNetwork([3, 1], weights=weights, activation=np.identity(3), biases=biases)
+    net = NeuralNetwork([3, 1], weights=weights, activation=lambda x: x, biases=biases)
     res, cache = net.forwardPropagation(np.matrix("0;1;2"))
     assert np.array_equal(res, np.matrix("8"))
 
@@ -243,11 +244,18 @@ test_forward_prop_affine_one_output()
 def test_forward_prop_affine_three_output():
     weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
     biases = [np.zeros((3,1))]
-    net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=biases)
+    net = NeuralNetwork([3, 3], weights=weights, activation=lambda x: x, biases=biases)
     res, cache = net.forwardPropagation(np.matrix("1;2;3"))
     assert np.array_equal(res, np.matrix("14; 32; 50"))
 
 test_forward_prop_affine_three_output()
 
 def test_forward_prop_activation_three_output():
-    pass
+    weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
+    biases = [np.zeros((3,1))]
+    activation = lambda x : np.matrix("2, 0, 0; 0, 2, 0; 0, 0, 2") * x
+    net = NeuralNetwork([3, 3], weights=weights, activation=activation, biases=biases)
+    res, cache = net.forwardPropagation(np.matrix("1;2;3"))
+    assert np.array_equal(res, np.matrix("28; 64; 100"))
+
+test_forward_prop_activation_three_output()
