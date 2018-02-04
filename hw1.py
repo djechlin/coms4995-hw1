@@ -24,8 +24,7 @@ class NeuralNetwork(object):
         """
         seed = 1
         np.random.seed(seed)
-        print("Using seed %s" % seed)
-        
+
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
         self.drop_prob = drop_prob
@@ -53,7 +52,8 @@ class NeuralNetwork(object):
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
         #or maybe join b into W
-        return W*A + b, np.zeros(3)
+
+        return W * A + b, np.zeros(3)
 
     def activationForward(self, A, activation="relu"):
         """
@@ -96,7 +96,7 @@ class NeuralNetwork(object):
         """
         cache = np.zeros(3)
 
-        layerout = self.parameters['weights'][0].dot(X) + self.parameters['biases'][0]
+        layerout = np.asmatrix(X).T
         for l in range(self.num_layers - 1):
             layerout, cache = self.affineForward(layerout,
                 self.parameters['weights'][l], self.parameters['biases'][l])
@@ -227,6 +227,26 @@ class NeuralNetwork(object):
 
 
 # test forward prop
-weights = np.matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=np.matrix([[0],[0],[0]]))
-print(net.forwardPropagation([0, 1, 2]))
+
+def test_forward_prop_affine_one_output():
+    print("test_forward_prop_affine_one_output")
+    weights = np.matrix("1, 2, 3")
+    biases = [np.zeros((1,1))]
+    net = NeuralNetwork([3, 1], weights=weights, activation=np.identity(3), biases=biases)
+    res, cache = net.forwardPropagation([0,1,2])
+    assert np.array_equal(res, np.matrix("8"))
+
+test_forward_prop_affine_one_output()
+
+def test_forward_prop_affine_three_output():
+    print("test_forward_prop_affine_three_output")
+    weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
+    biases = [np.zeros((3,1))]
+    net = NeuralNetwork([3, 3], weights=weights, activation=np.identity(3), biases=biases)
+    res, cache = net.forwardPropagation([1, 2, 3])
+    assert np.array_equal(res, np.matrix("14; 32; 50"))
+
+test_forward_prop_affine_three_output()
+
+def test_forward_prop_activation_three_output():
+    pass
