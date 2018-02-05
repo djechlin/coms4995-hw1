@@ -270,29 +270,12 @@ class NeuralNetwork(object):
 # test forward prop
 
 def test_forward_prop_affine_one_output():
-    weights = np.matrix("1, 2, 3")
+    weights = [np.matrix("1; 2; 3")]
     biases = [np.zeros((1,1))]
     net = NeuralNetwork([3, 1], weights=weights, activation=lambda x: x, biases=biases)
     res, cache = net.forwardPropagation(np.matrix("0;1;2"))
-    assert np.array_equal(res, np.matrix("8"))
+    print(str(res))
+    assert np.array_equal(res, np.matrix("1"))
 
 test_forward_prop_affine_one_output()
 
-def test_forward_prop_affine_three_output():
-    weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
-    biases = [np.zeros((3,1))]
-    net = NeuralNetwork([3, 3], weights=weights, activation=lambda x: x, biases=biases)
-    res, cache = net.forwardPropagation(np.matrix("1;2;3"))
-    assert np.array_equal(res, np.matrix("14; 32; 50"))
-
-test_forward_prop_affine_three_output()
-
-def test_forward_prop_activation_three_output():
-    weights = [np.matrix("1, 2, 3; 4, 5, 6; 7, 8, 9")]
-    biases = [np.zeros((3,1))]
-    activation = lambda x : np.matrix("2, 0, 0; 0, 2, 0; 0, 0, 2") * x
-    net = NeuralNetwork([3, 3], weights=weights, activation=activation, biases=biases)
-    res, cache = net.forwardPropagation(np.matrix("1;2;3"))
-    assert np.array_equal(res, np.matrix("28; 64; 100"))
-
-test_forward_prop_activation_three_output()
