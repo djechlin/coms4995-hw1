@@ -102,12 +102,17 @@ class NeuralNetwork(object):
         cache = []
         layerout = np.asmatrix(X)
 
-        for l in range(0, self.numlayers - 1):
-            layerout, c = self.activationForward(self.affineForward(layerout),self.parameters['weights'][l],self.parameters['biases'][l])
+        print("Shape layerout: %s" % str(layerout.shape))
+
+        for l in range(0, self.num_layers - 1):
+            layerout, c = self.activationForward(
+                self.affineForward(layerout,
+                    self.parameters['weights'][l],
+                    self.parameters['biases'][l]))
             cache.append(c)
 
         #softmax
-        AL = np.empty_like(layerout)
+        AL = np.zeros(shape=layerout.shape)
         temp = np.exp(layerout)
         for i,e in enumerate(temp):
             AL[i] = e/np.sum(temp)
