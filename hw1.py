@@ -212,15 +212,24 @@ class NeuralNetwork(object):
 
         """
 
-        gradients = {}
+        gradients = []
 
-        for i in range(10):
+        dAL_dA_r = dAL
+        g = self.activation
+        g_prime = self.relu_derivative
+        W = self.parameters['weights']
 
+        # start with last layer
+        for r in range(0, self.num_layers, -1):
+            A_rprev = cache[r-1]
+            Z_r =self.activation(cache[r-1])
+            dL_dA_rprev = W[r].T * dL_dA_r * g_prime(Z_r)
+            dL_dW_r  = dL_dA_r * g_prime(Z_r) * A_rprev.T
+            gradients[r] = dL_dW_r
 
             if self.drop_prob > 0:
                 #call dropout_backward
                 pass
-
 
         if self.reg_lambda > 0:
             # add gradients from L2 regularization to each dW
