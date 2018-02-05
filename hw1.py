@@ -30,21 +30,14 @@ class NeuralNetwork(object):
         self.drop_prob = drop_prob
         self.reg_lambda = reg_lambda
         self.activation = activation
+        self.relu_v = np.vectorize(self.relu)
         # init parameters
 
-        if weights is not None:
-            self.parameters['weights'] = weights
-        else:
-            self.parameters['weights'] = [np.random.rand(layer_dimensions[idx], val).T
-                for idx, val in enumerate(layer_dimensions[1:])]
+        self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
+            for idx, val in enumerate(layer_dimensions[1:])]
 
-        print("weights[0] shape: %s" % str(self.parameters['weights'][0].shape))
-
-        if biases is not None:
-            self.parameters['biases'] = biases
-        else:
-            self.parameters['biases'] = [np.random.rand(n, 1)
-                for n in layer_dimensions[1:]]
+        self.parameters['biases'] = [np.random.rand(n, 1)
+            for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
         """
@@ -55,9 +48,10 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        print("Shapes: %s, %s" % (str(A.shape), str(W.shape)))
-        #return W * A  , np.zeros(3) # + b, np.zeros(3)
-        return W.transpose()*A + b, (W,A,b)
+        print(W.shape)
+        print(A.shape)
+        print(b.shape)
+        return W.transpose()*A + b
 
     def activationForward(self, A, activation="relu"):
         """
@@ -69,8 +63,8 @@ class NeuralNetwork(object):
         if self.activation is not None:
             return self.activation(A)
 
-        relu_v = np.vectorize(self.relu)
-        return relu_v(A)
+        print("A shape %s " % str(A.shape))
+        return self.relu_v(A)
 
     def relu(self, X):
         return np.maximum(0,X)
@@ -100,22 +94,21 @@ class NeuralNetwork(object):
         """
 
         cache = []
-        layerout = np.asmatrix(X)
+        A = X
+        W = self.parameters['weights']
+        b = self.parameters['biases']
 
-        print("Shape layerout: %s" % str(layerout.shape))
-
+        # range(0, 3) = (0, 1, 2)
+        # one fewer computation than layers
         for l in range(0, self.num_layers - 1):
-            layerout, c = self.activationForward(
-                self.affineForward(layerout,
-                    self.parameters['weights'][l],
-                    self.parameters['biases'][l]))
-            cache.append(c)
+            Z = self.affineForward(A, W[l], b[l])
+            print("Z: %s" % str(Z.shape))
+            A = self.activationForward(Z)
+            cache.append(A)
 
         #softmax
-        AL = np.zeros(shape=layerout.shape)
-        temp = np.exp(layerout)
-        for i,e in enumerate(temp):
-            AL[i] = e/np.sum(temp)
+        A_exp = np.exp(A)
+        AL = A_exp / np.sum(A_exp)
 
         return AL, cache
 
@@ -131,9 +124,9 @@ class NeuralNetwork(object):
         # log loss
         y_i = 0
         cost = 0
-        for sample in AL.shape[1]:
+        for sample in range(AL.shape[1]):
             #if label = node #, then yTrue = 1
-            for i,node in enumerate(sample):
+            for i, node in enumerate(sample):
                 yTrue = 1 if y[y_i] == i else 0
                 cost += -yTrue*log(sample[i]) - (1 - yTrue)*log(1 - sample[i])
             y_i+=1
@@ -219,8 +212,8 @@ class NeuralNetwork(object):
         g_prime = self.relu_derivative
         W = self.parameters['weights']
 
-        # start with last layer
-        for r in range(0, self.num_layers, -1):
+        # start with last layer, note that range(3,-1,-1) == (3, 2, 1, 0)
+        for r in range(self.num_layers - 2, -1, -1):
             A_rprev = cache[r-1]
             Z_r =self.activation(cache[r-1])
             dL_dA_rprev = W[r].T * dL_dA_r * g_prime(Z_r)
@@ -293,23 +286,11 @@ class NeuralNetwork(object):
         :returns: (tuple) X_batch, y_batch
         """
 
-        select = [np.random.randint(len(X)) for i in range(batch_size)]
+        sample = random.sample(xrange(X.shape[1]), batch_size)
 
-        #Assuming X and Y are numpy arrays
-        X_batch = X[select]
-        Y_batch = Y[select]
+        #Assuming X and y are numpy arrays
+        X_batch = X[sample]
+        y_batch = y[sample]
         return X_batch, y_batch
 
-
-# test forward prop
-
-def test_forward_prop_affine_one_output():
-    weights = [np.matrix("1; 2; 3")]
-    biases = [np.zeros((1,1))]
-    net = NeuralNetwork([3, 1], weights=weights, activation=lambda x: x, biases=biases)
-    res, cache = net.forwardPropagation(np.matrix("0;1;2"))
-    print(str(res))
-    assert np.array_equal(res, np.matrix("1"))
-
-test_forward_prop_affine_one_output()
 

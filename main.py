@@ -10,7 +10,6 @@ print('Data loading done')
 
 # Part 1
 
-print ("X train shape: %s" % str(X_train.shape[0]))
 layer_dimensions = [X_train.shape[0], 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions)
 NN.train(X_train, y_train,

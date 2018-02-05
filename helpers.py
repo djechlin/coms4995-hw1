@@ -45,10 +45,10 @@ def get_labels(folder, label2id, limit=None):
     y = []
     count = 0
     for f in files:
+        y.append(get_label(f,label2id))
         count += 1
         if count == limit:
             break
-        y.append(get_label(f,label2id))
     return np.array(y)
 
 def one_hot(y, num_classes=10):
@@ -82,17 +82,18 @@ def get_images(folder, limit):
     files = get_files(folder)
     images = []
     count = 0
-    
+
     for f in files:
-        count += 1
-        if limit != None and count == limit:
-            print("Loaded %s (limit)" % limit)
-            break
         if count % 10000 == 0:
             print("Loaded {}/{}".format(count,len(files)))
         img_arr = get_img_array(f)
         img_arr = img_arr.flatten() / 255.0
         images.append(img_arr)
+        count += 1
+        if limit != None and count == limit:
+            print("Loaded %s (limit)" % limit)
+            break
+
     X = np.column_stack(images)
 
     return X
