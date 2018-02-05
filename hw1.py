@@ -56,7 +56,8 @@ class NeuralNetwork(object):
         #or maybe join b into W
 
         print("Shapes: %s, %s" % (str(A.shape), str(W.shape)))
-        return W * A  , np.zeros(3) # + b, np.zeros(3)
+        #return W * A  , np.zeros(3) # + b, np.zeros(3)
+        return W.transpose()*A + b, (W,A,b)
 
     def activationForward(self, A, activation="relu"):
         """
@@ -97,15 +98,21 @@ class NeuralNetwork(object):
             cache is cached values for each layer that
                      are needed in further steps
         """
-        cache = np.zeros(3)
 
+        cache = []
         layerout = np.asmatrix(X)
-        for l in range(self.num_layers - 1):
-            layerout, cache = self.affineForward(layerout,
-                self.parameters['weights'][l], self.parameters['biases'][l])
-        layerout = self.activationForward(layerout)
 
-        return layerout, cache
+        for l in range(0, self.numlayers - 1):
+            layerout, c = self.activationForward(self.affineForward(layerout),self.parameters['weights'][l],self.parameters['biases'][l])
+            cache.append(c)
+
+        #softmax
+        AL = np.empty_like(layerout)
+        temp = np.exp(layerout)
+        for i,e in enumerate(temp):
+            AL[i] = e/np.sum(temp)
+
+        return AL, cache
 
     def costFunction(self, AL, y):
         """
@@ -116,13 +123,31 @@ class NeuralNetwork(object):
         """
         # compute loss
 
+        # log loss
+        y_i = 0
+        cost = 0
+        for sample in AL.shape[1]:
+            #if label = node #, then yTrue = 1
+            for i,node in enumerate(sample):
+                yTrue = 1 if y[y_i] == i else 0
+                cost += -yTrue*log(sample[i]) - (1 - yTrue)*log(1 - sample[i])
+            y_i+=1
         if self.reg_lambda > 0:
-            # add regularization
             pass
+            # add regularization
+            # TODO
 
+        cost /= AL.shape(1)
 
-        # gradient of cost
-        dAL = 0
+        # gradient of cost #just subtract 1 from the correct class
+        for i in range(0, AL.shape[0]):
+            for j in range(0, AL.shape[1]):
+                yTrue = 1 if y[y_i] == i else 0
+                AL[i,j] -= yTrue
+
+        #average over all samples - DONT DO
+        #dAL = AL.sum(axis=1)/AL.shape(1)
+
         return cost, dAL
 
     def affineBackward(self, dA_prev, cache):
@@ -146,7 +171,8 @@ class NeuralNetwork(object):
 
 
     def relu_derivative(self, dx, cached_x):
-
+        #don't need param: dx
+        dx = 1 if cached_x >= 0 else 0
         return dx
 
     def dropout_backward(self, dA, cache):
@@ -183,7 +209,12 @@ class NeuralNetwork(object):
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
-        pass
+        #assuming gradients have been averaged across samples already
+        for i,gradient in gradients:
+            deltaW = gradient['weights'] * alpha
+            self.parameters['weights'][i] -= deltaW
+            deltab = gradient['biases'] * alpha
+            self.parameters['biases'][i] -= deltab
 
     def train(self, X, y, iters=1000, alpha=0.0001, batch_size=100, print_every=100):
         """
@@ -197,18 +228,19 @@ class NeuralNetwork(object):
 
         for i in range(0, iters):
             # get minibatch
-
+            X_batch, y_batch = self.get_batch(X, y, batch_size)
             # forward prop
-
+            AL, cache = self.forwardPropagation(X_batch)
             # compute loss
-
+            cost, dAL = self.costFunction(AL, y_batch)
             # compute gradients
-
+            gradients = self.backPropagation(dAL, y_batch, cache)
             # update weights and biases based on gradient
-
+            self.updateParameters(gradients, alpha)
             if i % print_every == 0:
+                print("Cost: " + cost)
+                #self.predict()
                 # print cost, train and validation set accuracies
-                pass
 
     def predict(self, X):
         """
@@ -227,6 +259,11 @@ class NeuralNetwork(object):
         :returns: (tuple) X_batch, y_batch
         """
 
+        select = [np.random.randint(len(X)) for i in range(batch_size)]
+
+        #Assuming X and Y are numpy arrays
+        X_batch = X[select]
+        Y_batch = Y[select]
         return X_batch, y_batch
 
 
