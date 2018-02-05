@@ -192,6 +192,26 @@ class NeuralNetwork(object):
         :param cache: cached values during forwardprop
         :returns gradients: dW and db for each weight/bias
         """
+
+        """
+        Key math:
+        Setting from notes:
+        Use r instead of l for layer
+        Z^r = (W^r)^T * A^(r-1) = affine layer
+        A^r = g^r(Z^r) = activated layer
+        W^r : layer r-1 -> layer r
+        g^r is probably relu, but you can add a g^final = softmax step
+
+        Problem: given dL/dA^r, compute dL/A^r and DL/dW^r. We only need to return
+        dL/dW^r, bu computing dL/dA^r enables recursion.
+
+        Implement this update:
+        Temp: Z^r = g(A^(r-1))
+        Set: dL/dA^(r-1) = (W^r)^T * dL/dA^r * g'(Z^r) (note g' not g)
+        Set: dL/dW^r = dL/dA^r * g'(Z^r) * (A^(r-1)^)T (note g' not g)
+
+        """
+
         gradients = {}
 
         for i in range(10):
