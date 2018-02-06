@@ -3,6 +3,7 @@ import numpy as np
 import scipy.misc
 import glob
 import sys
+import random #new
 
 from helpers import *
 
@@ -298,10 +299,10 @@ class NeuralNetwork(object):
         :returns: (tuple) X_batch, y_batch
         """
 
-        sample = random.sample(xrange(X.shape[1]), batch_size)
+        sample = random.sample(range(X.shape[1]), batch_size)
 
         #Assuming X and y are numpy arrays
-        X_batch = X[sample]
+        X_batch = X[:,sample]
         y_batch = y[sample]
         return X_batch, y_batch
 
