@@ -51,7 +51,11 @@ class NeuralNetwork(object):
         print(W.shape)
         print(A.shape)
         print(b.shape)
-        return W.transpose()*A + b
+
+        Z = W.transpose()*A + b
+        cache = (A,W,b,Z)
+
+        return Z, cache
 
     def activationForward(self, A, activation="relu"):
         """
@@ -101,10 +105,10 @@ class NeuralNetwork(object):
         # range(0, 3) = (0, 1, 2)
         # one fewer computation than layers
         for l in range(0, self.num_layers - 1):
-            Z = self.affineForward(A, W[l], b[l])
+            Z, c = self.affineForward(A, W[l], b[l])
             print("Z: %s" % str(Z.shape))
             A = self.activationForward(Z)
-            cache.append(A)
+            cache.append(c)
 
         #softmax
         A_exp = np.exp(A)
@@ -157,6 +161,13 @@ class NeuralNetwork(object):
                  dW: gradient on the weights
                  db: gradient on the bias
         """
+        #migrate some stuff to activationBackward
+        g_prime = self.relu_derivative
+
+        A, W, b, Z_r = cache[0], cache[1], cache[2], cache[3]    
+        dA = W.transpose() * dA_prev * g_prime(Z_r)
+        dW = dA_prev * g_prime(Z_r) * A.transpose()
+        dB = 0 ######~~~~ TODO ~~~~~#####
 
         return dA, dW, db
 
@@ -204,21 +215,22 @@ class NeuralNetwork(object):
         Set: dL/dW^r = dL/dA^r * g'(Z^r) * (A^(r-1)^)T (note g' not g)
 
         """
+        #gradients = []
+        gradients = {}
 
-        gradients = []
-
-        dAL_dA_r = dAL
-        g = self.activation
-        g_prime = self.relu_derivative
-        W = self.parameters['weights']
+        #hopefully list length is correct
+        gradients['dW'] = [0] * (self.num_layers - 1) 
+        gradients['b'] = [0] * (self.num_layers - 1)
+        
+        dAL_dA_rprev = dAL
 
         # start with last layer, note that range(3,-1,-1) == (3, 2, 1, 0)
         for r in range(self.num_layers - 2, -1, -1):
-            A_rprev = cache[r-1]
-            Z_r =self.activation(cache[r-1])
-            dL_dA_rprev = W[r].T * dL_dA_r * g_prime(Z_r)
-            dL_dW_r  = dL_dA_r * g_prime(Z_r) * A_rprev.T
-            gradients[r] = dL_dW_r
+            dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[r])
+
+            gradients['dW'][r] = dL_dW_r
+            gradients['db'][r] = dL_db_r
+            #TODO: bias
 
             if self.drop_prob > 0:
                 #call dropout_backward
