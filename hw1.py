@@ -51,14 +51,16 @@ class NeuralNetwork(object):
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
         #or maybe join b into W
+        
+        Z = W.transpose().dot(A) + b
+        cache = (A,W,b,Z)
+
         print("-affineForward()")
         print("W: " + str(W.shape))
         print("A: " + str(A.shape))
         print("b: " + str(b.shape))
-
-        Z = W.transpose().dot(A) + b
-        cache = (A,W,b,Z)
-
+        print("Z: %s" % str(Z.shape))
+        
         return Z, cache
 
     def activationForward(self, A, activation="relu"):
@@ -111,7 +113,6 @@ class NeuralNetwork(object):
         for l in range(0, self.num_layers - 2):
             print("layer" + str(l))
             Z, c = self.affineForward(A, W[l], b[l])
-            print("Z: %s" % str(Z.shape))
             A = self.activationForward(Z)
             cache.append(c)
         
@@ -179,14 +180,14 @@ class NeuralNetwork(object):
         
         A, W, b, Z_r = cache[0], cache[1], cache[2], cache[3]
         
-        print(W.shape)
-        print(dA_prev.shape)
-        print(Z_r.shape)
-        print(g_prime(0,Z_r).shape)
+        print("<< W:       " + str(W.shape))
+        print("<< dA_prev: " + str(dA_prev.shape))
+        print("<< Z_r:     " + str(Z_r.shape))
+        print("<< g':      " + str(g_prime(0,Z_r).shape))
         
-        dA = W.dot(dA_prev) * g_prime(0,Z_r)
-        dW = dA_prev * g_prime(Z_r).dot(A)
-        dB = 0 ######~~~~ TODO ~~~~~#####
+        dA = W.dot(dA_prev * g_prime(0,Z_r))
+        dW = (dA_prev * g_prime(0,Z_r)).dot(A.transpose())
+        db = 0 ######~~~~ TODO ~~~~~#####
 
         return dA, dW, db
 
@@ -239,10 +240,16 @@ class NeuralNetwork(object):
 
         #hopefully list length is correct
         gradients['dW'] = [0] * (self.num_layers - 1) 
-        gradients['b'] = [0] * (self.num_layers - 1)
+        gradients['db'] = [0] * (self.num_layers - 1)
         
         dL_dA_rprev = dAL
 
+        print("alskjfalksdjfs   " + str(len(cache)))
+        for c in cache:
+            for i in c:
+                print (i.shape,)
+            print ("\n")
+        
         # start with last layer, note that range(3,-1,-1) == (3, 2, 1, 0)
         for r in range(self.num_layers - 2, -1, -1):
             dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[r])
@@ -268,10 +275,13 @@ class NeuralNetwork(object):
         :param alpha: step size for gradient descent
         """
         #assuming gradients have been averaged across samples already
-        for i,gradient in gradients:
-            deltaW = gradient['weights'] * alpha
-            self.parameters['weights'][i] -= deltaW
-            deltab = gradient['biases'] * alpha
+        for i,dW in enumerate(gradients['dW']):
+            deltaW = dW * alpha
+            print(deltaW.shape)
+            print(self.parameters['weights'][i].shape)
+            self.parameters['weights'][i] -= deltaW.transpose()
+        for i,db in enumerate(gradients['db']):
+            deltab = db * alpha
             self.parameters['biases'][i] -= deltab
 
     def train(self, X, y, iters=1000, alpha=0.0001, batch_size=100, print_every=100):
@@ -296,7 +306,7 @@ class NeuralNetwork(object):
             # update weights and biases based on gradient
             self.updateParameters(gradients, alpha)
             if i % print_every == 0:
-                print("Cost: " + cost)
+                print("Cost: " + str(cost))
                 #self.predict()
                 # print cost, train and validation set accuracies
 
