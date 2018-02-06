@@ -32,14 +32,15 @@ class NeuralNetwork(object):
         self.reg_lambda = reg_lambda
         self.activation = activation
         self.relu_v = np.vectorize(self.relu)
+        self.relud_v = np.vectorize(self.relu_derivative)
         # init parameters
-
+        
         #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
         #at layer_dimensions[1:]. So idx points to the previous layer.
-        self.parameters['weights'] = [np.random.rand(layer_dimensions[idx], val)
+        self.parameters['weights'] = [np.random.randn(layer_dimensions[idx], val)
             for idx, val in enumerate(layer_dimensions[1:])]
 
-        self.parameters['biases'] = [np.random.rand(n, 1)
+        self.parameters['biases'] = [np.random.randn(n, 1)
             for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
@@ -50,12 +51,12 @@ class NeuralNetwork(object):
         :returns: the affine product WA + b, along with the cache required for the backward pass
         """
         #or maybe join b into W
+        print("-affineForward()")
+        print("W: " + str(W.shape))
+        print("A: " + str(A.shape))
+        print("b: " + str(b.shape))
 
-        print(W.shape)
-        print(A.shape)
-        print(b.shape)
-
-        Z = W.transpose()*A + b
+        Z = W.transpose().dot(A) + b
         cache = (A,W,b,Z)
 
         return Z, cache
@@ -70,7 +71,7 @@ class NeuralNetwork(object):
         if self.activation is not None:
             return self.activation(A)
 
-        print("A shape %s " % str(A.shape))
+        print("Apost: %s " % str(A.shape))
         return self.relu_v(A)
 
     def relu(self, X):
@@ -99,24 +100,30 @@ class NeuralNetwork(object):
             cache is cached values for each layer that
                      are needed in further steps
         """
-
+        print("-forwardPropagation()")
         cache = []
         A = X
         W = self.parameters['weights']
         b = self.parameters['biases']
 
         # range(0, 3) = (0, 1, 2)
-        # one fewer computation than layers
-        for l in range(0, self.num_layers - 1):
+        # two fewer computation than layers (last cycle will be softmax)
+        for l in range(0, self.num_layers - 2):
+            print("layer" + str(l))
             Z, c = self.affineForward(A, W[l], b[l])
             print("Z: %s" % str(Z.shape))
             A = self.activationForward(Z)
             cache.append(c)
+        
+        Z, c = self.affineForward(A, W[self.num_layers-2], b[self.num_layers-2])
+        cache.append(c)
 
         #softmax
-        A_exp = np.exp(A)
-        AL = A_exp / np.sum(A_exp)
-
+        A_exp = np.exp(Z)
+        AL = A_exp / np.sum(A_exp,axis=0)
+        
+        print("---=-=-=--=-=-=-")
+        print(len(cache))
         return AL, cache
 
     def costFunction(self, AL, y):
@@ -127,28 +134,31 @@ class NeuralNetwork(object):
         :returns cost, dAL: A scalar denoting cost and the gradient of cost
         """
         # compute loss
-
         # log loss
         y_i = 0
         cost = 0
-        for sample in range(AL.shape[1]):
+        for sample in AL.T:
             #if label = node #, then yTrue = 1
             for i, node in enumerate(sample):
                 yTrue = 1 if y[y_i] == i else 0
-                cost += -yTrue*log(sample[i]) - (1 - yTrue)*log(1 - sample[i])
+                cost += -yTrue*np.log(sample[i]) - (1 - yTrue)*np.log(1 - sample[i])
             y_i+=1
         if self.reg_lambda > 0:
             pass
             # add regularization
             # TODO
 
-        cost /= AL.shape(1)
+        cost /= AL.shape[1]
 
         # gradient of cost #just subtract 1 from the correct class
-        for i in range(0, AL.shape[0]):
-            for j in range(0, AL.shape[1]):
+        
+        dAL = AL
+        y_i=0
+        for j in range(0, AL.shape[1]): #cols - samples
+            for i in range(0, AL.shape[0]): #rows - nodes
                 yTrue = 1 if y[y_i] == i else 0
-                AL[i,j] -= yTrue
+                dAL[i,j] -= yTrue
+            y_i+=1
 
         #average over all samples - DONT DO
         #dAL = AL.sum(axis=1)/AL.shape(1)
@@ -165,11 +175,17 @@ class NeuralNetwork(object):
                  db: gradient on the bias
         """
         #migrate some stuff to activationBackward
-        g_prime = self.relu_derivative
-
-        A, W, b, Z_r = cache[0], cache[1], cache[2], cache[3]    
-        dA = W.transpose() * dA_prev * g_prime(Z_r)
-        dW = dA_prev * g_prime(Z_r) * A.transpose()
+        g_prime = self.relud_v
+        
+        A, W, b, Z_r = cache[0], cache[1], cache[2], cache[3]
+        
+        print(W.shape)
+        print(dA_prev.shape)
+        print(Z_r.shape)
+        print(g_prime(0,Z_r).shape)
+        
+        dA = W.dot(dA_prev) * g_prime(0,Z_r)
+        dW = dA_prev * g_prime(Z_r).dot(A)
         dB = 0 ######~~~~ TODO ~~~~~#####
 
         return dA, dW, db
@@ -225,7 +241,7 @@ class NeuralNetwork(object):
         gradients['dW'] = [0] * (self.num_layers - 1) 
         gradients['b'] = [0] * (self.num_layers - 1)
         
-        dAL_dA_rprev = dAL
+        dL_dA_rprev = dAL
 
         # start with last layer, note that range(3,-1,-1) == (3, 2, 1, 0)
         for r in range(self.num_layers - 2, -1, -1):
@@ -300,7 +316,7 @@ class NeuralNetwork(object):
         :parma batch_size: minibatch size
         :returns: (tuple) X_batch, y_batch
         """
-
+        
         sample = random.sample(range(X.shape[1]), batch_size)
 
         #Assuming X and y are numpy arrays
