@@ -34,7 +34,9 @@ class NeuralNetwork(object):
         self.relu_v = np.vectorize(self.relu)
         # init parameters
 
-        self.parameters['weights'] = [np.random.rand(layer_dimensions[idx-1], val)
+        #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
+        #at layer_dimensions[1:]. So idx points to the previous layer.
+        self.parameters['weights'] = [np.random.rand(layer_dimensions[idx], val)
             for idx, val in enumerate(layer_dimensions[1:])]
 
         self.parameters['biases'] = [np.random.rand(n, 1)
