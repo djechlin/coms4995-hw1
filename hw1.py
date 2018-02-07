@@ -184,9 +184,9 @@ class NeuralNetwork(object):
         print("<< dA_prev: " + str(dA_prev.shape))
         print("<< Z_r:     " + str(Z_r.shape))
         print("<< g':      " + str(g_prime(0,Z_r).shape))
-
-        dA = W.dot(dA_prev * g_prime(0,Z_r))
-        dW = (dA_prev * g_prime(0,Z_r)).dot(A.transpose())
+#        dZ
+        dA = np.dot(W,dA_prev) #g_prime(0,Z_r))
+        dW = np.dot(dA_prev,A.T) # g_prime(0,Z_r)
         db = 0 ######~~~~ TODO ~~~~~#####
 
         return dA, dW, db
@@ -307,16 +307,13 @@ class NeuralNetwork(object):
             self.updateParameters(gradients, alpha)
             if i % print_every == 0:
                 print("Cost: " + str(cost))
-                #self.predict()
                 # print cost, train and validation set accuracies
 
     def predict(self, X):
         """
         Make predictions for each sample
         """
-
         return self.forwardPropagation(X)
-
 
     def get_batch(self, X, y, batch_size):
         """
