@@ -185,8 +185,8 @@ class NeuralNetwork(object):
         print("<< Z_r:     " + str(Z_r.shape))
         print("<< g':      " + str(g_prime(0,Z_r).shape))
 #        dZ
-        dA = np.dot(W,dA_prev) #g_prime(0,Z_r))
-        dW = np.dot(dA_prev,A.T) # g_prime(0,Z_r)
+        dA = np.dot(W,dA_prev*g_prime(0,Z_r))
+        dW = np.dot(dA_prev*g_prime(0,Z_r),A.T)
         db = 0 ######~~~~ TODO ~~~~~#####
 
         return dA, dW, db
