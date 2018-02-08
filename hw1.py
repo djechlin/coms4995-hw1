@@ -41,12 +41,12 @@ class NeuralNetwork(object):
         #at layer_dimensions[1:]. So idx points to the previous layer.
         self.parameters['weights'] = [.1*np.random.randn(layer_dimensions[idx], val)
             for idx, val in enumerate(layer_dimensions[1:])]
-    
+
         w_i = 0
         for layer in layer_dimensions[1:]:
             self.parameters['weights'][w_i]/np.sqrt(layer_dimensions[w_i])
             w_i+=1
-        
+
         self.parameters['biases'] = [0 for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
@@ -127,7 +127,7 @@ class NeuralNetwork(object):
 
         Z, c = self.affineForward(A, W[self.num_layers-2], b[self.num_layers-2])
         cache.append(c)
-        
+
 #         AL = np.empty_like(Z,float)
 #         for i,l in enumerate(Z.T):
 #             A_exp = np.exp(Z[:,i]-np.max(Z[:,i]))
@@ -140,12 +140,12 @@ class NeuralNetwork(object):
 #                 print(np.sum(A_exp))
 #                 print(AL[:,i])
 #                 print("-=-=-=-")
-        
+
 #         print("Z " + str(Z[:,0]))
 #         print("AL " + str(AL[:,0]))
         BL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
 #         print("BL " + str(BL[:,0]))
-        
+
         return BL, cache
 
     def costFunction(self, AL, y):
@@ -155,7 +155,7 @@ class NeuralNetwork(object):
         :param alpha: regularization parameter
         :returns cost, dAL: A scalar denoting cost and the gradient of cost
         """
-        
+
         correct = 0
         accuracy = 0
         y_i = 0
@@ -165,7 +165,7 @@ class NeuralNetwork(object):
                 correct += 1
             y_i+=1
         accuracy = correct / len(y)
-        
+
         # compute loss
         y_i = 0
         cost = 0
@@ -227,7 +227,7 @@ class NeuralNetwork(object):
         In this case, it's just relu.
         """
         #does this need to sum?
-        
+
         #from x2 = f(u2) -> u2 = wx+b (gets dz pre)
         pass
 
@@ -270,11 +270,11 @@ class NeuralNetwork(object):
         """
         #gradients = []
         gradients = {}
-        
+
         g_prime = self.relud_v
 
         #hopefully list length is correct
-        gradients['dW'] = [0] * (self.num_layers - 1) 
+        gradients['dW'] = [0] * (self.num_layers - 1)
         gradients['db'] = [0] * (self.num_layers - 1)
 
         dL_dA_rprev = dAL
@@ -289,7 +289,7 @@ class NeuralNetwork(object):
         for r in range(self.num_layers - 2, -1, -1):
             dL_dA_rprev *= g_prime(0,cache[r][3])
             dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[r])
-            
+
             gradients['dW'][r] = dL_dW_r
             gradients['db'][r] = dL_db_r
 
