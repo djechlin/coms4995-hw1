@@ -334,6 +334,8 @@ class NeuralNetwork(object):
         :param print_every: no. of iterations to print debug info after
         """
 
+        costs = 0
+        accuracies = 0
         for i in range(0, iters):
             # get minibatch
             X_batch, y_batch = self.get_batch(X, y, batch_size)
@@ -345,8 +347,16 @@ class NeuralNetwork(object):
             gradients = self.backPropagation(dAL, y_batch, cache)
             # update weights and biases based on gradient
             self.updateParameters(gradients, alpha, beta)
+
+            costs += cost
+            accuracies += accuracy
             if i % print_every == 0:
-                print("[%d / %d] Cost: %.4f, Accuracy: %.1f%%" % (i, iters, cost, 100 * accuracy))
+                # handle first loop separately
+                cost_avg = costs if i == 0 else costs / float(print_every)
+                accuracy_avg = accuracies if i == 0 else accuracies / float(print_every)
+                print("[%d / %d] *Cost: %.3f, *Accuracy: %.1f%%" % (i, iters, cost_avg, accuracy_avg))
+                costs = 0
+                accuracies = 0
                 # print cost, train and validation set accuracies
 
     def predict(self, X):

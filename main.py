@@ -13,6 +13,7 @@ print('Data loading done')
 
 layer_dimensions = [X_train.shape[0], 1000, 500, 800, 50, 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions, drop_prob=0)#, optimizer="sgd_momentum")
+print("Train: %s" % (str(layer_dimensions),))
 NN.train(X_train, y_train, print_every=4)
 # NN.train(X_train, y_train,
 # 	iters=1000,
