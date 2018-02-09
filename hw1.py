@@ -122,7 +122,7 @@ class NeuralNetwork(object):
 
         #softmax
 #         print("hi" + str(Z[:,0]))
-        AL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
+        AL = np.exp(Z) / np.sum(np.exp(Z), axis=0)
 
         return AL, M, cache
 
@@ -145,7 +145,7 @@ class NeuralNetwork(object):
             #if label = node #, then yTrue = 1
             for i, node in enumerate(sample):
                 yTrue = 1 if y[y_i] == i else 0
-                cost += -yTrue*np.log(sample[i]) - (1 - yTrue)*np.log(1 - sample[i])
+                cost += -yTrue*np.log(sample[i]) # - (1 - yTrue)*np.log(1 - sample[i])
             y_i+=1
             #L1 Regularization
             if self.reg_lambda == 1:
@@ -304,7 +304,7 @@ class NeuralNetwork(object):
             # update weights and biases based on gradient
             self.updateParameters(gradients, alpha)
             if i % print_every == 0:
-                print("Cost: " + str(cost) + " Accuracy: " + str(accuracy))
+                print("[%s/%s] Cost: %.4f Accuracy: %d%%" % (i, iters, cost, 100 * accuracy))
                 # print cost, train and validation set accuracies
 
     def predict(self, X):
