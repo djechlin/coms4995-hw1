@@ -320,7 +320,7 @@ class NeuralNetwork(object):
             # update weights and biases based on gradient
             self.updateParameters(gradients, alpha, beta)
             if i % print_every == 0:
-                print("[%s/%s] Cost: %.4f Accuracy: %d%%" % (i, iters, cost, 100 * accuracy))
+                print("[%s/%s, img=%d] Cost: %.4f Accuracy: %d%%" % (i, iters, i * batch_size, cost, 100 * accuracy))
                 # print cost, train and validation set accuracies
 
     def predict(self, X):
