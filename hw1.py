@@ -27,6 +27,8 @@ class NeuralNetwork(object):
 
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
+        self.last_dW_momz  = [None] * self.num_layers
+        self.last_db_momz = [None] * self.num_layers
         self.drop_prob = drop_prob
         self.reg_lambda = reg_lambda
         self.activation = activation
@@ -267,22 +269,36 @@ class NeuralNetwork(object):
         return gradients
 
 
-    def updateParameters(self, gradients, alpha):
+    def updateParameters(self, gradients, alpha, beta):
         """
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
-        #assuming gradients have been averaged across samples already
-        for i,dW in enumerate(gradients['dW']):
-            deltaW = dW * alpha
-#             print(deltaW.shape)
-#             print(self.parameters['weights'][i].shape)
-            self.parameters['weights'][i] -= deltaW.transpose()
-        for i,db in enumerate(gradients['db']):
-            deltab = db * alpha
-            self.parameters['biases'][i] -= deltab
+        W = self.parameters['weights']
+        b = self.parameters['biases']
 
-    def train(self, X, y, iters=10000, alpha=0.001, batch_size=100, print_every=100): #2000
+        # momentum
+        # z^{k+1} = \beta z^k + grad f(w^k)
+        # w^{k+1} = w^k - \alpha z^{k+1}
+
+        #assuming gradients have been averaged across samples already
+        for i, dW in enumerate(gradients['dW']):
+            if self.last_dW_momz[i] is None:
+                self.last_dW_momz[i] = dW
+            else:
+                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + dW
+            W[i] -= alpha * self.last_dW_momz[i].T
+
+
+
+        for i, db in enumerate(gradients['db']):
+            if self.last_db_momz[i] is None:
+                self.last_db_momz[i] = db
+            else:
+                self.last_db_momz[i] = beta * self.last_db_momz[i] + db
+            b[i] -= alpha * self.last_db_momz[i]
+
+    def train(self, X, y, iters=10000, alpha=0.001, beta=0, batch_size=100, print_every=100): #2000
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -302,7 +318,7 @@ class NeuralNetwork(object):
             # compute gradients
             gradients = self.backPropagation(dAL, y_batch, M, cache)
             # update weights and biases based on gradient
-            self.updateParameters(gradients, alpha)
+            self.updateParameters(gradients, alpha, beta)
             if i % print_every == 0:
                 print("[%s/%s] Cost: %.4f Accuracy: %d%%" % (i, iters, cost, 100 * accuracy))
                 # print cost, train and validation set accuracies

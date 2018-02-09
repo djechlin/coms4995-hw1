@@ -5,15 +5,15 @@ import numpy as np
 # Load the data
 data_root_path = '/home/daniel/hw1/cifar10-hw1/'
 # data_root_path = './cifar10-hw1/'
-X_train, y_train = get_train_data(data_root_path, limit=10) # this may take a few minutes
-X_test = get_images(data_root_path + 'test', limit=10)
+X_train, y_train = get_train_data(data_root_path, limit=50000) # this may take a few minutes
+X_test = get_images(data_root_path + 'test', limit=50000)
 print('Data loading done')
 
 # Part 1
 
-layer_dimensions = [X_train.shape[0], 200, 90, 40, 10]  # including the input and output layers
+layer_dimensions = [X_train.shape[0], 400, 200, 100, 32, 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions, drop_prob=0)
-NN.train(X_train, y_train)
+NN.train(X_train, y_train, print_every=10, batch_size=200, alpha=0.0001, beta=0.75)
 # NN.train(X_train, y_train,
 # 	iters=1000,
 # 	alpha=0.1,
