@@ -354,7 +354,7 @@ class NeuralNetwork(object):
                 # handle first loop separately
                 cost_avg = costs if i == 0 else (costs / float(print_every))
                 accuracy_avg = accuracies if i == 0 else (accuracies / float(print_every))
-                print("[%d / %d] *Cost: %.3f, *Accuracy: %.1f%%" % (i, iters, cost_avg, 100 * accuracy_avg))
+                print("[%d / %d] *Cost: %.2f, *Accuracy: %.1f%%" % (i, iters, cost_avg, 100 * accuracy_avg))
                 costs = 0
                 accuracies = 0
                 # print cost, train and validation set accuracies
