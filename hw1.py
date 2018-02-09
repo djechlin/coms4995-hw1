@@ -134,15 +134,9 @@ class NeuralNetwork(object):
         :returns cost, dAL: A scalar denoting cost and the gradient of cost
         """
 
-        correct = 0
-        accuracy = 0
-        y_i = 0
-        for sample in AL.T:
-            #if label = node #, then yTrue = 1
-            if np.argmax(sample) == y[y_i]:
-                correct += 1
-            y_i+=1
-        accuracy = correct / len(y)
+        predictions = np.argmax(AL, axis=0)
+        correct = np.sum(predictions == y)
+        accuracy = correct / float(len(y))
 
         # compute loss
         y_i = 0
