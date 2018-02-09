@@ -11,9 +11,9 @@ print('Data loading done')
 
 # Part 1
 
-layer_dimensions = [X_train.shape[0], 400, 200, 100, 32, 10]  # including the input and output layers
-NN = NeuralNetwork(layer_dimensions, drop_prob=0)
-NN.train(X_train, y_train, print_every=10, batch_size=200, alpha=0.0001, beta=0.75)
+layer_dimensions = [X_train.shape[0], 800, 80, 20, 10]  # including the input and output layers
+NN = NeuralNetwork(layer_dimensions, drop_prob=0) #, optimizer="rms_prop")
+NN.train(X_train, y_train)
 # NN.train(X_train, y_train,
 # 	iters=1000,
 # 	alpha=0.1,

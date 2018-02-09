@@ -15,7 +15,8 @@ class NeuralNetwork(object):
     Stores parameters, activations, cached values.
     Provides necessary functions for training and prediction.
     """
-    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,activation=None):
+    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,
+                 activation=None, optimizer=None):
         """
         Initializes the weights and biases for each layer
         :param layer_dimensions: (list) number of nodes in each layer
@@ -27,14 +28,15 @@ class NeuralNetwork(object):
 
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
-        self.last_dW_momz  = [None] * self.num_layers
-        self.last_db_momz = [None] * self.num_layers
         self.drop_prob = drop_prob
         self.reg_lambda = reg_lambda
         self.activation = activation
         self.relu_v = np.vectorize(self.relu)
         self.relud_v = np.vectorize(self.relu_derivative)
-        # init parameters
+
+        self.optimizer = optimizer
+        self.last_dW_momz  = [None] * self.num_layers
+        self.last_db_momz = [None] * self.num_layers
 
         #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
         #at layer_dimensions[1:]. So idx points to the previous layer.
@@ -103,7 +105,7 @@ class NeuralNetwork(object):
             cache is cached values for each layer that
                      are needed in further steps
         """
-        #### cache = (A,W,b,Z) ####
+        #### cache = (A,W,b,Z,M) ####
 
         cache = []
         A = X
@@ -113,9 +115,10 @@ class NeuralNetwork(object):
         # range(0, 3) = (0, 1, 2)
         # two fewer computation than layers (last cycle will be softmax)
         for l in range(0, self.num_layers - 2):
-            Z, c = self.affineForward(A, W[l], b[l])
+            Z, c1 = self.affineForward(A, W[l], b[l])
             A = self.activationForward(Z)
             A, M = self.dropout(A,self.drop_prob)
+            c = (c1[0],c1[1],c1[2],c1[3],M)
             cache.append(c)
 
         #last affine
@@ -123,10 +126,9 @@ class NeuralNetwork(object):
         cache.append(c)
 
         #softmax
-#         print("hi" + str(Z[:,0]))
-        AL = np.exp(Z) / np.sum(np.exp(Z), axis=0)
+        AL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
 
-        return AL, M, cache
+        return AL, cache
 
     def costFunction(self, AL, y):
         """
@@ -141,14 +143,12 @@ class NeuralNetwork(object):
         accuracy = correct / float(len(y))
 
         # compute loss
-        y_i = 0
         cost = 0
-        for sample in AL.T:
+        for j, sample in enumerate(AL.T):
             #if label = node #, then yTrue = 1
             for i, node in enumerate(sample):
-                yTrue = 1 if y[y_i] == i else 0
-                cost += -yTrue*np.log(sample[i]) # - (1 - yTrue)*np.log(1 - sample[i])
-            y_i+=1
+                yTrue = 1 if y[j] == i else 0
+                cost += -yTrue*np.log(sample[i])# - (1 - yTrue)*np.log(1 - sample[i])
             #L1 Regularization
             if self.reg_lambda == 1:
                 np.sum(np.abs(sample))
@@ -161,15 +161,12 @@ class NeuralNetwork(object):
         # gradient of cost #just subtract 1 from the correct class
 
         dAL = AL
-        y_i=0
         for j in range(0, AL.shape[1]): #cols - samples
             for i in range(0, AL.shape[0]): #rows - nodes
-                yTrue = 1 if y[y_i] == i else 0
+                yTrue = 1 if y[j] == i else 0
                 dAL[i,j] -= yTrue
-            y_i+=1
 
         dAL /= AL.shape[1]
-
 
         #average over all samples - DONT DO
         #dAL = AL.sum(axis=1)/AL.shape(1)
@@ -214,7 +211,7 @@ class NeuralNetwork(object):
     def dropout_backward(self, dA, cache):
         return dA * cache
 
-    def backPropagation(self, dAL, M, Y, cache):
+    def backPropagation(self, dAL, Y, cache):
         """
         Run backpropagation to compute gradients on all paramters in the model
         :param dAL: gradient on the last layer of the network. Returned by the cost function.
@@ -251,11 +248,13 @@ class NeuralNetwork(object):
         gradients['db'] = [0] * (self.num_layers - 1)
 
         dL_dA_rprev = dAL
-
+        dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[self.num_layers - 2])
+        gradients['dW'][self.num_layers - 2] = dL_dW_r
+        gradients['db'][self.num_layers - 2] = dL_db_r
         # start with last layer, note that range(3,-1,-1) == (3, 2, 1, 0)
-        for r in range(self.num_layers - 2, -1, -1):
+        for r in range(self.num_layers - 3, -1, -1):
             if self.drop_prob > 0:
-                dL_dA_rprev = self.dropout_backward (dL_dA_rprev, M)
+                dL_dA_rprev = self.dropout_backward (dL_dA_rprev, cache[r][4])
             dL_dA_rprev *= g_prime(0,cache[r][3])
             dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[r])
 
@@ -274,6 +273,7 @@ class NeuralNetwork(object):
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
+
         W = self.parameters['weights']
         b = self.parameters['biases']
 
@@ -282,23 +282,49 @@ class NeuralNetwork(object):
         # w^{k+1} = w^k - \alpha z^{k+1}
 
         #assuming gradients have been averaged across samples already
-        for i, dW in enumerate(gradients['dW']):
-            if self.last_dW_momz[i] is None:
-                self.last_dW_momz[i] = dW
-            else:
-                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + dW
-            W[i] -= alpha * self.last_dW_momz[i].T
+
+        if self.optimizer == None:
+            for i,dW in enumerate(gradients['dW']):
+                deltaW = dW * alpha
+                self.parameters['weights'][i] -= deltaW.transpose()
+            for i,db in enumerate(gradients['db']):
+                deltab = db * alpha
+                self.parameters['biases'][i] -= deltab
+
+        elif self.optimizer == "sgd_momentum":
+            for i, dW in enumerate(gradients['dW']):
+                if self.last_dW_momz[i] is None:
+                    self.last_dW_momz[i] = dW
+                else:
+                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
+                W[i] -= alpha * self.last_dW_momz[i].T
+
+            for i, db in enumerate(gradients['db']):
+                if self.last_db_momz[i] is None:
+                    self.last_db_momz[i] = db
+                else:
+                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
+                b[i] -= alpha * self.last_db_momz[i]
+
+        #RMS PROP WRONG DIMENSIONS
+        elif self.optimizer == "rms_prop":
+            EPSILON = .00000001
+            for i, dW in enumerate(gradients['dW']):
+                if self.last_dW_momz[i] is None:
+                    self.last_dW_momz[i] = np.dot(dW,dW.T)
+                else:
+                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * np.dot(dW,dW.T)
+                W[i] -= alpha * dW/np.sqrt(self.last_dW_momz[i] + EPSILON)
+
+            for i, db in enumerate(gradients['db']):
+                if self.last_db_momz[i] is None:
+                    self.last_db_momz[i] = np.dot(db,db.T)
+                else:
+                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * np.dot(db,db.T)
+                b[i] -= alpha * db/np.sqrt(self.last_db_momz[i] + EPSILON)
 
 
-
-        for i, db in enumerate(gradients['db']):
-            if self.last_db_momz[i] is None:
-                self.last_db_momz[i] = db
-            else:
-                self.last_db_momz[i] = beta * self.last_db_momz[i] + db
-            b[i] -= alpha * self.last_db_momz[i]
-
-    def train(self, X, y, iters=10000, alpha=0.001, beta=0, batch_size=100, print_every=100): #2000
+    def train(self, X, y, iters=10000, alpha=0.00001, beta=.85, batch_size=100, print_every=100): #2000
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -308,20 +334,22 @@ class NeuralNetwork(object):
         :param print_every: no. of iterations to print debug info after
         """
 
+
+        #CHANGE X to X_batch etc for testing
         for i in range(0, iters):
             # get minibatch
-            X_batch, y_batch = self.get_batch(X, y, batch_size)
+            #X_batch, y_batch = self.get_batch(X, y, batch_size)
             # forward prop
-            AL, M, cache = self.forwardPropagation(X_batch)
+            AL, cache = self.forwardPropagation(X)
             # compute loss
-            accuracy, cost, dAL = self.costFunction(AL, y_batch)
+            accuracy, cost, dAL = self.costFunction(AL, y)
             # compute gradients
-            gradients = self.backPropagation(dAL, y_batch, M, cache)
+            gradients = self.backPropagation(dAL, y, cache)
             # update weights and biases based on gradient
             self.updateParameters(gradients, alpha, beta)
             if i % print_every == 0:
-                print("[%s/%s, img=%d] Cost: %.4f Accuracy: %d%%" % (i, iters, i * batch_size, cost, 100 * accuracy))
                 # print cost, train and validation set accuracies
+                print("[%s/%s, img=%d] Cost: %.4f Accuracy: %d%%" % (i, iters, i * batch_size, cost, 100 * accuracy))
 
     def predict(self, X):
         """
@@ -344,5 +372,3 @@ class NeuralNetwork(object):
         X_batch = X[:,sample]
         y_batch = y[sample]
         return X_batch, y_batch
-
-
