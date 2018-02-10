@@ -91,7 +91,6 @@ def get_images(folder, limit):
         images.append(img_arr)
         count += 1
         if limit != None and count == limit:
-            print("Loaded %s (limit)" % limit)
             break
 
     X = np.column_stack(images)

@@ -59,8 +59,10 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        Z = np.dot(W.T,A) + b
+        print("affineforward %s, %s" % (str(W.T.shape), str(A.shape)))
+        Z = np.dot(W.T, A) + b
         cache = (A,W,b,Z)
+        print("return affine forward")
 
         return Z, cache
 
@@ -71,6 +73,7 @@ class NeuralNetwork(object):
         :param prob: activation funciton to apply to A. Just "relu" for this assignment.
         :returns: activation(A)
         """
+        print("activationForward")
         if self.activation is not None:
             return self.activation(A)
 
@@ -115,6 +118,7 @@ class NeuralNetwork(object):
         # range(0, 3) = (0, 1, 2)
         # two fewer computation than layers (last cycle will be softmax)
         for l in range(0, self.num_layers - 2):
+            print("iterate: " + str(l))
             Z, c1 = self.affineForward(A, W[l], b[l])
             A = self.activationForward(Z)
             A, M = self.dropout(A,self.drop_prob)
@@ -340,6 +344,7 @@ class NeuralNetwork(object):
         costs = 0
         accuracies = 0
         for i in range(0, iters):
+            print("iteration " + str(i))
             # get minibatch
             X_batch, y_batch = self.get_batch(X, y, batch_size)
             # forward prop
