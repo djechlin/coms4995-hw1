@@ -202,8 +202,6 @@ class NeuralNetwork(object):
         Interface to call backward on activation functions.
         In this case, it's just relu.
         """
-        #does this need to sum?
-        #from x2 = f(u2) -> u2 = wx+b (gets dz pre)
         pass
 
 
@@ -277,7 +275,11 @@ class NeuralNetwork(object):
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
-
+        EPSILON = .0000001
+        beta=.9
+        beta1=0
+        beta2=0
+        
         W = self.parameters['weights']
         b = self.parameters['biases']
 
@@ -294,41 +296,28 @@ class NeuralNetwork(object):
             for i,db in enumerate(gradients['db']):
                 deltab = db * alpha
                 self.parameters['biases'][i] -= deltab
-
+                
         elif self.optimizer == "sgd_momentum":
             for i, dW in enumerate(gradients['dW']):
-                if self.last_dW_momz[i] is None:
-                    self.last_dW_momz[i] = dW
-                else:
-                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
+                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
                 W[i] -= alpha * self.last_dW_momz[i].T
 
             for i, db in enumerate(gradients['db']):
-                if self.last_db_momz[i] is None:
-                    self.last_db_momz[i] = db
-                else:
-                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
+                self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
                 b[i] -= alpha * self.last_db_momz[i]
-
-        #RMS PROP WRONG DIMENSIONS
+                
         elif self.optimizer == "rms_prop":
-            EPSILON = .00000001
+            
             for i, dW in enumerate(gradients['dW']):
-                if self.last_dW_momz[i] is None:
-                    self.last_dW_momz[i] = np.dot(dW,dW.T)
-                else:
-                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * np.dot(dW,dW.T)
-                W[i] -= alpha * dW/np.sqrt(self.last_dW_momz[i] + EPSILON)
+                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW**2
+                W[i] -= alpha * dW / np.sqrt(self.last_dW_momz[i] + EPSILON)
 
             for i, db in enumerate(gradients['db']):
-                if self.last_db_momz[i] is None:
-                    self.last_db_momz[i] = np.dot(db,db.T)
-                else:
-                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * np.dot(db,db.T)
-                b[i] -= alpha * db/np.sqrt(self.last_db_momz[i] + EPSILON)
+                self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db**2
+                b[i] -= alpha * db / np.sqrt(self.last_db_momz[i] + EPSILON)
 
 
-    def train(self, X, y, iters=10000, alpha=0.00001, beta=.85, batch_size=150, print_every=100): #2000
+    def train(self, X, y, iters=10000, alpha=0.0005, beta=.85, batch_size=150, print_every=20): #2000
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -337,6 +326,11 @@ class NeuralNetwork(object):
         :param batch_size: number of samples in a minibatch
         :param print_every: no. of iterations to print debug info after
         """
+        import datetime
+        currentDT = datetime.datetime.now()
+        print (currentDT.strftime("%I:%M:%S %p"))
+
+        X, Xv, y, yv = self.split_data(X,y)
 
         costs = 0
         accuracies = 0
@@ -355,10 +349,12 @@ class NeuralNetwork(object):
             costs += cost
             accuracies += accuracy
             if i % print_every == 0:
-                # handle first loop separately
                 cost_avg = costs if i == 0 else (costs / float(print_every))
                 accuracy_avg = accuracies if i == 0 else (accuracies / float(print_every))
-                print("[%d / %d] *Cost: %.2f, *Accuracy: %.1f%%" % (i, iters, cost_avg, 100 * accuracy_avg))
+                print("[%d / %d] Cost: %.4f, Acc: %.1f%% || CostV: %.4f, AccV: %.1f%%, Alpha: %.5f" % (i, iters, cost, 100 * accuracy, costv, 100 * accuracyv, alpha))
+
+                if alpha >= .00001:
+                    alpha *= .8
                 costs = 0
                 accuracies = 0
                 # print cost, train and validation set accuracies
@@ -384,3 +380,14 @@ class NeuralNetwork(object):
         X_batch = X[:,sample]
         y_batch = y[sample]
         return X_batch, y_batch
+
+    def split_data(self, X, y, percent_valid=.1):
+        num_samples = X.shape[1]
+        split = int(num_samples*percent_valid)
+        
+        X_valid = X[:,0:split]
+        X_train = X[:,split:num_samples]
+        y_valid = y[0:split]
+        y_train = y[split:num_samples]
+        
+        return X_train, X_valid, y_train, y_valid
