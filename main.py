@@ -5,8 +5,15 @@ import numpy as np
 # Load the data
 data_root_path = '/home/daniel/hw1/cifar10-hw1/'
 # data_root_path = './cifar10-hw1/'
-X_train, y_train = get_train_data(data_root_path, limit=5000) # this may take a few minutes
-X_test = get_images(data_root_path + 'test', limit=5000)
+X_train, y_train = get_train_data(data_root_path, limit=50000) # this may take a few minutes
+
+X_centered = (X_train - np.mean(X_train, axis=1)[:, np.newaxis])
+X_div = (X_centered - np.std(X_centered, axis=1)[:, np.newaxis])
+
+X_train = X_div # :)
+print("Normalized X_train to N(0,1)")
+
+X_test = get_images(data_root_path + 'test', limit=50000)
 print('Data loading done')
 
 # Part 1

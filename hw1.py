@@ -125,9 +125,10 @@ class NeuralNetwork(object):
         Z, c = self.affineForward(A, W[self.num_layers-2], b[self.num_layers-2])
         cache.append(c)
 
-        Z = Z - np.max(Z, axis=0)
         #softmax
-        AL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
+        Z = Z - np.max(Z, axis=0)
+        Zx = np.exp(Z)
+        AL = Zx / np.sum(Zx, axis = 0)
 
         # never predict less than 0.01% chance
         AL = np.maximum(AL, .00001)
