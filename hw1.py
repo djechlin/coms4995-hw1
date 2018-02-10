@@ -336,9 +336,12 @@ class NeuralNetwork(object):
         :param batch_size: number of samples in a minibatch
         :param print_every: no. of iterations to print debug info after
         """
+        import datetime
+        currentDT = datetime.datetime.now()
+        print (currentDT.strftime("%I:%M:%S %p"))
 
-        costs = 0
-        accuracies = 0
+        X, Xv, y, yv = self.split_data(X,y)
+
         for i in range(0, iters):
             # get minibatch
             X_batch, y_batch = self.get_batch(X, y, batch_size)
@@ -349,21 +352,15 @@ class NeuralNetwork(object):
             # compute gradients
             gradients = self.backPropagation(dAL, y_batch, cache)
             # update weights and biases based on gradient
-            self.updateParameters(gradients, alpha, beta)
-
-            costs += cost
-            accuracies += accuracy
+            self.updateParameters(gradients, alpha)
             if i % print_every == 0:
-                # handle first loop separately
-                cost_avg = costs if i == 0 else (costs / float(print_every))
-                accuracy_avg = accuracies if i == 0 else (accuracies / float(print_every))
-                print("[%d / %d] *Cost: %.2f, *Accuracy: %.1f%%" % (i, iters, cost_avg, 100 * accuracy_avg))
-                costs = 0
-                accuracies = 0
+                ALv, cachev = self.predict(Xv)
+                accuracyv, costv, dALv = self.costFunction(ALv, yv)
+                print("[%d / %d] Cost: %.4f, Acc: %.1f%% || CostV: %.4f, AccV: %.1f%%" % (i, iters, cost, 100 * accuracy, costv, 100 * accuracyv))
                 # print cost, train and validation set accuracies
 
     def predict(self, X):
-        """
+        """print("[%d / %d] Cost: %.4f, Accuracy: %.1f%%" % (i, iters, cost, 100 * accuracy))
         Make predictions for each sample
         """
         return self.forwardPropagation(X)
@@ -382,4 +379,16 @@ class NeuralNetwork(object):
         #Assuming X and y are numpy arrays
         X_batch = X[:,sample]
         y_batch = y[sample]
-        return X_batch, y_batch
+
+        return X_batch,y_batch
+
+    def split_data(self, X, y, percent_valid=.1):
+        num_samples = X.shape[1]
+        split = int(num_samples*percent_valid)
+
+        X_valid = X[:,0:split]
+        X_train = X[:,split:num_samples]
+        y_valid = y[0:split]
+        y_train = y[split:num_samples]
+
+        return X_train, X_valid, y_train, y_valid
