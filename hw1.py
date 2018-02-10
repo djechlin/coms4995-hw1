@@ -126,8 +126,13 @@ class NeuralNetwork(object):
         cache.append(c)
 
         #softmax
-        AL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
+        Z = Z - np.max(Z, axis=0)
+        Zx = np.exp(Z)
+        AL = Zx / np.sum(Zx, axis = 0)
 
+        # never predict less than 0.01% chance
+        AL = np.maximum(AL, .00001)
+        AL = AL / np.sum(AL, axis = 0)
         return AL, cache
 
     def costFunction(self, AL, y):
@@ -198,7 +203,6 @@ class NeuralNetwork(object):
         In this case, it's just relu.
         """
         #does this need to sum?
-
         #from x2 = f(u2) -> u2 = wx+b (gets dz pre)
         pass
 
