@@ -33,7 +33,7 @@ class NeuralNetwork(object):
         self.activation = activation
         self.relu_v = np.vectorize(self.relu)
         self.relud_v = np.vectorize(self.relu_derivative)
-        
+
         self.optimizer = optimizer
         self.last_dW_momz  = [None] * self.num_layers
         self.last_db_momz = [None] * self.num_layers
@@ -42,12 +42,12 @@ class NeuralNetwork(object):
         #at layer_dimensions[1:]. So idx points to the previous layer.
         self.parameters['weights'] = [.1*np.random.randn(layer_dimensions[idx], val)
             for idx, val in enumerate(layer_dimensions[1:])]
-    
+
         w_i = 0
         for layer in layer_dimensions[1:]:
             self.parameters['weights'][w_i]/np.sqrt(layer_dimensions[w_i])
             w_i+=1
-        
+
         self.parameters['biases'] = [0 for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
@@ -59,8 +59,10 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        Z = np.dot(W.T,A) + b
+        print("affineforward %s, %s" % (str(W.T.shape), str(A.shape)))
+        Z = np.dot(W.T, A) + b
         cache = (A,W,b,Z)
+        print("return affine forward")
 
         return Z, cache
 
@@ -71,6 +73,7 @@ class NeuralNetwork(object):
         :param prob: activation funciton to apply to A. Just "relu" for this assignment.
         :returns: activation(A)
         """
+        print("activationForward")
         if self.activation is not None:
             return self.activation(A)
 
@@ -106,7 +109,7 @@ class NeuralNetwork(object):
                      are needed in further steps
         """
         #### cache = (A,W,b,Z,M) ####
-        
+
         cache = []
         A = X
         W = self.parameters['weights']
@@ -115,19 +118,20 @@ class NeuralNetwork(object):
         # range(0, 3) = (0, 1, 2)
         # two fewer computation than layers (last cycle will be softmax)
         for l in range(0, self.num_layers - 2):
+            print("iterate: " + str(l))
             Z, c1 = self.affineForward(A, W[l], b[l])
             A = self.activationForward(Z)
             A, M = self.dropout(A,self.drop_prob)
             c = (c1[0],c1[1],c1[2],c1[3],M)
             cache.append(c)
-            
+
         #last affine
         Z, c = self.affineForward(A, W[self.num_layers-2], b[self.num_layers-2])
         cache.append(c)
-        
+
         #softmax
         AL = np.exp(Z) / np.sum(np.exp(Z), axis = 0)
-        
+
         return AL, cache
 
     def costFunction(self, AL, y):
@@ -137,11 +141,11 @@ class NeuralNetwork(object):
         :param alpha: regularization parameter
         :returns cost, dAL: A scalar denoting cost and the gradient of cost
         """
-        
+
         predictions = np.argmax(AL, axis=0)
         correct = np.sum(predictions == y)
         accuracy = correct / float(len(y))
-        
+
         # compute loss
         cost = 0
         for j, sample in enumerate(AL.T):
@@ -165,7 +169,7 @@ class NeuralNetwork(object):
             for i in range(0, AL.shape[0]): #rows - nodes
                 yTrue = 1 if y[j] == i else 0
                 dAL[i,j] -= yTrue
-            
+
 #         dAL /= AL.shape[1]
 
         #average over all samples - DONT DO
@@ -198,7 +202,7 @@ class NeuralNetwork(object):
         In this case, it's just relu.
         """
         #does this need to sum?
-        
+
         #from x2 = f(u2) -> u2 = wx+b (gets dz pre)
         pass
 
@@ -240,11 +244,11 @@ class NeuralNetwork(object):
         """
         #gradients = []
         gradients = {}
-        
+
         g_prime = self.relud_v
 
         #hopefully list length is correct
-        gradients['dW'] = [0] * (self.num_layers - 1) 
+        gradients['dW'] = [0] * (self.num_layers - 1)
         gradients['db'] = [0] * (self.num_layers - 1)
 
         dL_dA_rprev = dAL
@@ -257,7 +261,7 @@ class NeuralNetwork(object):
                 dL_dA_rprev = self.dropout_backward (dL_dA_rprev, cache[r][4])
             dL_dA_rprev *= g_prime(0,cache[r][3])
             dL_dA_rprev, dL_dW_r, dL_db_r = self.affineBackward(dL_dA_rprev, cache[r])
-            
+
             gradients['dW'][r] = dL_dW_r
             gradients['db'][r] = dL_db_r
 
@@ -273,16 +277,16 @@ class NeuralNetwork(object):
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
-        
+
         W = self.parameters['weights']
         b = self.parameters['biases']
-            
+
         # momentum
         # z^{k+1} = \beta z^k + grad f(w^k)
         # w^{k+1} = w^k - \alpha z^{k+1}
 
         #assuming gradients have been averaged across samples already
-        
+
         if self.optimizer == None:
             for i,dW in enumerate(gradients['dW']):
                 deltaW = dW * alpha
@@ -290,7 +294,7 @@ class NeuralNetwork(object):
             for i,db in enumerate(gradients['db']):
                 deltab = db * alpha
                 self.parameters['biases'][i] -= deltab
-                
+
         elif self.optimizer == "sgd_momentum":
             for i, dW in enumerate(gradients['dW']):
                 if self.last_dW_momz[i] is None:
@@ -305,7 +309,7 @@ class NeuralNetwork(object):
                 else:
                     self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
                 b[i] -= alpha * self.last_db_momz[i]
-                
+
         #RMS PROP WRONG DIMENSIONS
         elif self.optimizer == "rms_prop":
             EPSILON = .00000001
@@ -322,7 +326,7 @@ class NeuralNetwork(object):
                 else:
                     self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * np.dot(db,db.T)
                 b[i] -= alpha * db/np.sqrt(self.last_db_momz[i] + EPSILON)
-        
+
 
     def train(self, X, y, iters=10000, alpha=0.00001, beta=.85, batch_size=150, print_every=100): #2000
         """
@@ -337,6 +341,7 @@ class NeuralNetwork(object):
         costs = 0
         accuracies = 0
         for i in range(0, iters):
+            print("iteration " + str(i))
             # get minibatch
             X_batch, y_batch = self.get_batch(X, y, batch_size)
             # forward prop
