@@ -268,18 +268,22 @@ class NeuralNetwork(object):
             gradients['dW'][r] = dL_dW_r
             gradients['db'][r] = dL_db_r
 
-        if self.reg_lambda > 0:
-            # add gradients from L2 regularization to each dW
-            pass
+            if self.reg_lambda == 1:
+                np.sum(sample==1)
+                pass
 
         return gradients
 
 
-    def updateParameters(self, gradients, alpha, beta):
+    def updateParameters(self, gradients, alpha):
         """
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
         """
+        EPSILON = .0000001
+        beta=.9
+        beta1=0
+        beta2=0
 
         W = self.parameters['weights']
         b = self.parameters['biases']
@@ -300,37 +304,30 @@ class NeuralNetwork(object):
 
         elif self.optimizer == "sgd_momentum":
             for i, dW in enumerate(gradients['dW']):
-                if self.last_dW_momz[i] is None:
-                    self.last_dW_momz[i] = dW
-                else:
-                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
+                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
                 W[i] -= alpha * self.last_dW_momz[i].T
 
             for i, db in enumerate(gradients['db']):
-                if self.last_db_momz[i] is None:
-                    self.last_db_momz[i] = db
-                else:
-                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
+                self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
                 b[i] -= alpha * self.last_db_momz[i]
 
         elif self.optimizer == "rms_prop":
-            EPSILON = .00000001
+
             for i, dW in enumerate(gradients['dW']):
-                if self.last_dW_momz[i] is None:
-                    self.last_dW_momz[i] = np.dot(dW,dW.T)
-                else:
-                    self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * np.dot(dW,dW.T)
-                W[i] -= alpha * dW/np.sqrt(self.last_dW_momz[i] + EPSILON)
+                self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW**2
+                W[i] -= alpha * dW / np.sqrt(self.last_dW_momz[i] + EPSILON)
 
             for i, db in enumerate(gradients['db']):
-                if self.last_db_momz[i] is None:
-                    self.last_db_momz[i] = np.dot(db,db.T)
-                else:
-                    self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * np.dot(db,db.T)
-                b[i] -= alpha * db/np.sqrt(self.last_db_momz[i] + EPSILON)
+                self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db**2
+                b[i] -= alpha * db / np.sqrt(self.last_db_momz[i] + EPSILON)
+
+#         elif self.optimizer == "adam":
+#             m = beta1*m + (1-beta1)*dx
+#             v = beta2*v + (1-beta2)*(dx**2)
+#             x += - learning_rate * m / (np.sqrt(v) + EPSILON)
 
 
-    def train(self, X, y, iters=10000, alpha=0.00001, beta=.85, batch_size=150, print_every=100): #2000
+    def train(self, X, y, iters=10000, alpha=0.0001, batch_size=200, print_every=100): #2000
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
