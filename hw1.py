@@ -35,8 +35,8 @@ class NeuralNetwork(object):
         self.relud_v = np.vectorize(self.relu_derivative)
 
         self.optimizer = optimizer
-        self.last_dW_momz  = [None] * self.num_layers
-        self.last_db_momz = [None] * self.num_layers
+        self.last_dW_momz  = [0.0] * self.num_layers
+        self.last_db_momz = [0.0] * self.num_layers
 
         #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
         #at layer_dimensions[1:]. So idx points to the previous layer.
@@ -59,7 +59,7 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        Z = np.dot(W.T, A) + b
+        Z = np.dot(W.T,A) + b
         cache = (A,W,b,Z)
 
         return Z, cache
@@ -129,10 +129,12 @@ class NeuralNetwork(object):
         Z = Z - np.max(Z, axis=0)
         Zx = np.exp(Z)
         AL = Zx / np.sum(Zx, axis = 0)
+#         AL = np.exp(Z) / np.sum(np.exps(Z), axis = 0)
 
         # never predict less than 0.01% chance
         AL = np.maximum(AL, .00001)
         AL = AL / np.sum(AL, axis = 0)
+
         return AL, cache
 
     def costFunction(self, AL, y):
@@ -153,7 +155,7 @@ class NeuralNetwork(object):
             #if label = node #, then yTrue = 1
             for i, node in enumerate(sample):
                 yTrue = 1 if y[j] == i else 0
-                cost += -yTrue*np.log(sample[i])# - (1 - yTrue)*np.log(1 - sample[i])
+                cost += -yTrue*np.log(sample[i])
             #L1 Regularization
             if self.reg_lambda == 1:
                 np.sum(np.abs(sample))
@@ -171,7 +173,7 @@ class NeuralNetwork(object):
                 yTrue = 1 if y[j] == i else 0
                 dAL[i,j] -= yTrue
 
-#         dAL /= AL.shape[1]
+        #dAL[i,j] /= AL.shape[1]
 
         #average over all samples - DONT DO
         #dAL = AL.sum(axis=1)/AL.shape(1)
@@ -203,6 +205,7 @@ class NeuralNetwork(object):
         In this case, it's just relu.
         """
         #does this need to sum?
+
         #from x2 = f(u2) -> u2 = wx+b (gets dz pre)
         pass
 
@@ -310,7 +313,6 @@ class NeuralNetwork(object):
                     self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
                 b[i] -= alpha * self.last_db_momz[i]
 
-        #RMS PROP WRONG DIMENSIONS
         elif self.optimizer == "rms_prop":
             EPSILON = .00000001
             for i, dW in enumerate(gradients['dW']):
