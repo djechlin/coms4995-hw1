@@ -11,10 +11,12 @@ print('Data loading done')
 
 # Part 1
 
-layer_dimensions = [X_train.shape[0], 1000, 500, 800, 50, 10]  # including the input and output layers
+alpha = 0.00001
+batch = 10
+layer_dimensions = [X_train.shape[0], 400, 500, 400, 10]  # including the input and output layers
 NN = NeuralNetwork(layer_dimensions, drop_prob=0)#, optimizer="sgd_momentum")
-print("Train: %s" % (str(layer_dimensions),))
-NN.train(X_train, y_train, print_every=4)
+print("Train: batch=%d, alpha=%f, layer=%s" % (batch, alpha, str(layer_dimensions),))
+NN.train(X_train, y_train, print_every=20, iters=100000, alpha=alpha, batch_size=batch)
 # NN.train(X_train, y_train,
 # 	iters=1000,
 # 	alpha=0.1,
