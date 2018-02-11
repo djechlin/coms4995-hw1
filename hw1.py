@@ -199,17 +199,17 @@ class NeuralNetwork(object):
 
         dA = np.dot(W,dA_prev)
         dW = np.dot(dA_prev,A.T)
-        db = np.sum(g_prime(0,Z_r),axis=1,keepdims=True)
+        db = np.sum(g_prime(0.0, Z_r), axis=1, keepdims=True)
 
         if self.reg_lambda_1 > 0:
           dW += self.reg_lambda_1 * np.sign(W.T)
-          if b != 0:
-            db += self.reg_lambda_1 * np.sign(b)
+          if type(b) != 'int':
+            db = db + ( self.reg_lambda_1 * np.sign(b))
 
         if self.reg_lambda_2 > 0:
           dW += self.reg_lambda_2 * 2.0 * W.T
-          if b != 0:
-            db += self.reg_lambda_2 * 2.0 * b
+          if type(b) != 'int':
+            db = db + (self.reg_lambda_2 * 2.0 * b)
 
         return dA, dW, db
 
