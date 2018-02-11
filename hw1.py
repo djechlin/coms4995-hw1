@@ -48,7 +48,7 @@ class NeuralNetwork(object):
 
         w_i = 0
         for layer in layer_dimensions[1:]:
-            self.parameters['weights'][w_i]/np.sqrt(layer_dimensions[w_i])
+            self.parameters['weights'] = self.parameters['weights'][w_i] / np.sqrt(layer_dimensions[w_i])
             w_i+=1
 
         self.parameters['biases'] = [0 for n in layer_dimensions[1:]]
@@ -172,7 +172,6 @@ class NeuralNetwork(object):
               for r in range(self.num_layers - 1):
                 cost += self.reg_lambda_2 * np.sum(np.multiply(W[r], W[r]))
                 cost += self.reg_lambda_2 * np.sum(np.multiply(b[r], b[r]))
-
         cost /= AL.shape[1]
 
         # gradient of cost #just subtract 1 from the correct class
