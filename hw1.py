@@ -209,9 +209,13 @@ class NeuralNetwork(object):
 
         if self.reg_lambda_1 > 0:
           dW += self.reg_lambda_1 * np.sign(W.T)
+          if b != 0:
+            db += self.reg_lambda_1 * np.sign(b)
 
         if self.reg_lambda_2 > 0:
-          dw += self.reg_lambda_2 * 2 * W
+          dW += self.reg_lambda_2 * 2.0 * W.T
+          if b != 0:
+            db += self.reg_lambda_2 * 2.0 * b
 
         return dA, dW, db
 
@@ -309,7 +313,7 @@ class NeuralNetwork(object):
             for i,db in enumerate(gradients['db']):
                 deltab = db * alpha
                 self.parameters['biases'][i] -= deltab
-                
+
         elif self.optimizer == "sgd_momentum":
             for i, dW in enumerate(gradients['dW']):
                 self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW
