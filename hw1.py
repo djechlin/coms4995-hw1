@@ -15,7 +15,7 @@ class NeuralNetwork(object):
     Stores parameters, activations, cached values.
     Provides necessary functions for training and prediction.
     """
-    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda=0.0,
+    def __init__(self, layer_dimensions, drop_prob=0.0, reg_lambda_1=0.0, reg_lambda_2=0.0,
                  activation=None, optimizer=None):
         """
         Initializes the weights and biases for each layer
@@ -29,7 +29,8 @@ class NeuralNetwork(object):
         self.parameters = {}
         self.num_layers = len(layer_dimensions)
         self.drop_prob = drop_prob
-        self.reg_lambda = reg_lambda
+        self.reg_lambda_1 = reg_lambda_1
+        self.reg_lambda_2 = reg_lambda_2
         self.activation = activation
         self.relu_v = np.vectorize(self.relu)
         self.relud_v = np.vectorize(self.relu_derivative)
@@ -151,6 +152,9 @@ class NeuralNetwork(object):
         correct = np.sum(predictions == y)
         accuracy = correct / float(len(y))
 
+        W = self.parameters['weights']
+        b = self.parameters['biases']
+
         # compute loss
         cost = 0
         for j, sample in enumerate(AL.T):
@@ -159,11 +163,15 @@ class NeuralNetwork(object):
                 yTrue = 1 if y[j] == i else 0
                 cost += -yTrue*np.log(sample[i])
             #L1 Regularization
-            if self.reg_lambda == 1:
-                np.sum(np.abs(sample))
+            if self.reg_lambda_1 >= 0:
+              for r in range(self.num_layers - 1):
+                cost += self.reg_lambda_1 * np.sum(np.abs(W[r]))
+                cost += self.reg_lambda_1 * np.sum(np.abs(b[r]))
             #L2 Regularization
-            if self.reg_lambda == 2:
-                np.sqrt(np.dot(sample,sample))
+            if self.reg_lambda_2 >= 0:
+              for r in range(self.num_layers - 1):
+                cost += self.reg_lambda_2 * np.sum(np.multiply(W[r], W[r]))
+                cost += self.reg_lambda_2 * np.sum(np.multiply(b[r], b[r]))
 
         cost /= AL.shape[1]
 
@@ -198,6 +206,12 @@ class NeuralNetwork(object):
         dA = np.dot(W,dA_prev)
         dW = np.dot(dA_prev,A.T)
         db = np.sum(g_prime(0,Z_r),axis=1,keepdims=True)
+
+        if self.reg_lambda_1 > 0:
+          dW += self.reg_lambda_1 * np.sign(W.T)
+
+        if self.reg_lambda_2 > 0:
+          dw += self.reg_lambda_2 * 2 * W
 
         return dA, dW, db
 
@@ -266,10 +280,6 @@ class NeuralNetwork(object):
 
             gradients['dW'][r] = dL_dW_r
             gradients['db'][r] = dL_db_r
-
-            if self.reg_lambda == 1:
-                np.sum(sample==1)
-                pass
 
         return gradients
 
@@ -365,7 +375,6 @@ class NeuralNetwork(object):
             if i % print_every == 0:
                 ALv, cachev = self.predict(Xv)
                 accuracyv, costv, dALv = self.costFunction(ALv, yv)
-                
                 cost_avg = costs if i == 0 else (costs / float(print_every))
                 accuracy_avg = accuracies if i == 0 else (accuracies / float(print_every))
                 print("[%d / %d] Cost: %.4f, Acc: %.1f%% || CostV: %.4f, AccV: %.1f%%, Alpha: %.5f" % (i, iters, cost, 100 * accuracy, costv, 100 * accuracyv, alpha))
