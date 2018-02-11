@@ -46,11 +46,6 @@ class NeuralNetwork(object):
         self.parameters['weights'] = [.1*np.random.randn(layer_dimensions[idx], val)
             for idx, val in enumerate(layer_dimensions[1:])]
 
-        w_i = 0
-        for layer in layer_dimensions[1:]:
-            self.parameters['weights'] = self.parameters['weights'][w_i] / np.sqrt(layer_dimensions[w_i])
-            w_i+=1
-
         self.parameters['biases'] = [0 for n in layer_dimensions[1:]]
 
     def affineForward(self, A, W, b):
