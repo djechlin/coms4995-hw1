@@ -158,12 +158,12 @@ class NeuralNetwork(object):
                 yTrue = 1 if y[j] == i else 0
                 cost += -yTrue*np.log(sample[i])
             #L1 Regularization
-            if self.reg_lambda_1 >= 0:
+            if self.reg_lambda_1 > 0:
               for r in range(self.num_layers - 1):
                 cost += self.reg_lambda_1 * np.sum(np.abs(W[r]))
                 cost += self.reg_lambda_1 * np.sum(np.abs(b[r]))
             #L2 Regularization
-            if self.reg_lambda_2 >= 0:
+            if self.reg_lambda_2 > 0:
               for r in range(self.num_layers - 1):
                 cost += self.reg_lambda_2 * np.sum(np.multiply(W[r], W[r]))
                 cost += self.reg_lambda_2 * np.sum(np.multiply(b[r], b[r]))
