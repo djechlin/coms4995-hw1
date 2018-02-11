@@ -37,6 +37,8 @@ class NeuralNetwork(object):
         self.optimizer = optimizer
         self.last_dW_momz  = [0.0] * self.num_layers
         self.last_db_momz = [0.0] * self.num_layers
+        self.last_dW_momz_m = [0.0] * self.num_layers
+        self.last_dW_momz_v = [0.0] * self.num_layers
 
         #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
         #at layer_dimensions[1:]. So idx points to the previous layer.
@@ -317,11 +319,17 @@ class NeuralNetwork(object):
                 self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db**2
                 b[i] -= alpha * db / np.sqrt(self.last_db_momz[i] + EPSILON)
 
-#         elif self.optimizer == "adam":
-#             m = beta1*m + (1-beta1)*dx
-#             v = beta2*v + (1-beta2)*(dx**2)
-#             x += - learning_rate * m / (np.sqrt(v) + EPSILON)
-
+        elif self.optimizer == "adam":
+            for i, dW in enumerate(gradients['dW']):
+                self.last_dW_momz_m[i] = beta1 * self.last_dW_momz_m[i] + (1 - beta1) * dW
+                self.last_dW_momz_v[i] = beta2 * self.last_dW_momz_v[i] + (1 - beta2) * dW**2
+                x -= (alpha * self.last_dW_momz_m[i] / (np.sqrt(self.last_dW_momz_v[i]) + EPSILON)).T
+            
+            for i, db in enumerate(gradients['db']):
+                self.last_db_momz_m[i] = beta1 * self.last_db_momz_m[i] + (1 - beta1) * db
+                self.last_db_momz_v[i] = beta2 * self.last_db_momz_v[i] + (1 - beta2) * db**2
+                x -= alpha * self.last_db_momz_m[i] / (np.sqrt(self.last_db_momz_v[i]) + EPSILON)
+        
 
     def train(self, X, y, iters=10000, alpha=0.0001, batch_size=200, print_every=100): #2000
         """
