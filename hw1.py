@@ -35,8 +35,8 @@ class NeuralNetwork(object):
         self.relud_v = np.vectorize(self.relu_derivative)
 
         self.optimizer = optimizer
-        self.last_dW_momz  = [None] * self.num_layers
-        self.last_db_momz = [None] * self.num_layers
+        self.last_dW_momz  = [0.0] * self.num_layers
+        self.last_db_momz = [0.0] * self.num_layers
 
         #idx is the index of val - 1, because idx starts at zero, despite enumerating starting
         #at layer_dimensions[1:]. So idx points to the previous layer.
@@ -59,7 +59,7 @@ class NeuralNetwork(object):
         """
         #or maybe join b into W
 
-        Z = np.dot(W.T, A) + b
+        Z = np.dot(W.T,A) + b
         cache = (A,W,b,Z)
 
         return Z, cache
@@ -129,10 +129,12 @@ class NeuralNetwork(object):
         Z = Z - np.max(Z, axis=0)
         Zx = np.exp(Z)
         AL = Zx / np.sum(Zx, axis = 0)
+#         AL = np.exp(Z) / np.sum(np.exps(Z), axis = 0)
 
         # never predict less than 0.01% chance
         AL = np.maximum(AL, .00001)
         AL = AL / np.sum(AL, axis = 0)
+
         return AL, cache
 
     def costFunction(self, AL, y):
@@ -153,7 +155,7 @@ class NeuralNetwork(object):
             #if label = node #, then yTrue = 1
             for i, node in enumerate(sample):
                 yTrue = 1 if y[j] == i else 0
-                cost += -yTrue*np.log(sample[i])# - (1 - yTrue)*np.log(1 - sample[i])
+                cost += -yTrue*np.log(sample[i])
             #L1 Regularization
             if self.reg_lambda == 1:
                 np.sum(np.abs(sample))
@@ -171,7 +173,7 @@ class NeuralNetwork(object):
                 yTrue = 1 if y[j] == i else 0
                 dAL[i,j] -= yTrue
 
-#         dAL /= AL.shape[1]
+        #dAL[i,j] /= AL.shape[1]
 
         #average over all samples - DONT DO
         #dAL = AL.sum(axis=1)/AL.shape(1)
@@ -263,14 +265,14 @@ class NeuralNetwork(object):
             gradients['dW'][r] = dL_dW_r
             gradients['db'][r] = dL_db_r
 
-        if self.reg_lambda > 0:
-            # add gradients from L2 regularization to each dW
-            pass
+            if self.reg_lambda == 1:
+                np.sum(sample==1)
+                pass
 
         return gradients
 
 
-    def updateParameters(self, gradients, alpha, beta):
+    def updateParameters(self, gradients, alpha):
         """
         :param gradients: gradients for each weight/bias
         :param alpha: step size for gradient descent
@@ -279,7 +281,6 @@ class NeuralNetwork(object):
         beta=.9
         beta1=0
         beta2=0
-        
         W = self.parameters['weights']
         b = self.parameters['biases']
 
@@ -305,9 +306,9 @@ class NeuralNetwork(object):
             for i, db in enumerate(gradients['db']):
                 self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db
                 b[i] -= alpha * self.last_db_momz[i]
-                
+
         elif self.optimizer == "rms_prop":
-            
+
             for i, dW in enumerate(gradients['dW']):
                 self.last_dW_momz[i] = beta * self.last_dW_momz[i] + (1 - beta) * dW**2
                 W[i] -= alpha * dW / np.sqrt(self.last_dW_momz[i] + EPSILON)
@@ -316,8 +317,13 @@ class NeuralNetwork(object):
                 self.last_db_momz[i] = beta * self.last_db_momz[i] + (1 - beta) * db**2
                 b[i] -= alpha * db / np.sqrt(self.last_db_momz[i] + EPSILON)
 
+#         elif self.optimizer == "adam":
+#             m = beta1*m + (1-beta1)*dx
+#             v = beta2*v + (1-beta2)*(dx**2)
+#             x += - learning_rate * m / (np.sqrt(v) + EPSILON)
 
-    def train(self, X, y, iters=10000, alpha=0.0005, beta=.85, batch_size=150, print_every=20): #2000
+
+    def train(self, X, y, iters=10000, alpha=0.0001, batch_size=200, print_every=100): #2000
         """
         :param X: input samples, each column is a sample
         :param y: labels for input samples, y.shape[0] must equal X.shape[1]
@@ -332,8 +338,6 @@ class NeuralNetwork(object):
 
         X, Xv, y, yv = self.split_data(X,y)
 
-        costs = 0
-        accuracies = 0
         for i in range(0, iters):
             # get minibatch
             X_batch, y_batch = self.get_batch(X, y, batch_size)
@@ -344,23 +348,15 @@ class NeuralNetwork(object):
             # compute gradients
             gradients = self.backPropagation(dAL, y_batch, cache)
             # update weights and biases based on gradient
-            self.updateParameters(gradients, alpha, beta)
-
-            costs += cost
-            accuracies += accuracy
+            self.updateParameters(gradients, alpha)
             if i % print_every == 0:
-                cost_avg = costs if i == 0 else (costs / float(print_every))
-                accuracy_avg = accuracies if i == 0 else (accuracies / float(print_every))
-                print("[%d / %d] Cost: %.4f, Acc: %.1f%% || CostV: %.4f, AccV: %.1f%%, Alpha: %.5f" % (i, iters, cost, 100 * accuracy, costv, 100 * accuracyv, alpha))
-
-                if alpha >= .00001:
-                    alpha *= .8
-                costs = 0
-                accuracies = 0
+                ALv, cachev = self.predict(Xv)
+                accuracyv, costv, dALv = self.costFunction(ALv, yv)
+                print("[%d / %d] Cost: %.4f, Acc: %.1f%% || CostV: %.4f, AccV: %.1f%%" % (i, iters, cost, 100 * accuracy, costv, 100 * accuracyv))
                 # print cost, train and validation set accuracies
 
     def predict(self, X):
-        """
+        """print("[%d / %d] Cost: %.4f, Accuracy: %.1f%%" % (i, iters, cost, 100 * accuracy))
         Make predictions for each sample
         """
         return self.forwardPropagation(X)
@@ -379,15 +375,14 @@ class NeuralNetwork(object):
         #Assuming X and y are numpy arrays
         X_batch = X[:,sample]
         y_batch = y[sample]
-        return X_batch, y_batch
+
+        return X_batch,y_batch
 
     def split_data(self, X, y, percent_valid=.1):
         num_samples = X.shape[1]
         split = int(num_samples*percent_valid)
-        
         X_valid = X[:,0:split]
         X_train = X[:,split:num_samples]
         y_valid = y[0:split]
         y_train = y[split:num_samples]
-        
         return X_train, X_valid, y_train, y_valid
